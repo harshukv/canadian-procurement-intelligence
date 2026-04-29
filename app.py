@@ -6,18 +6,70 @@ import numpy as np
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="CA Procurement Intelligence Portal", page_icon="🇨🇦", layout="wide")
 
-# --- STYLES (ULTRA HIGH CONTRAST) ---
+# --- STYLES (PREMIUM LIGHT THEME) ---
 def apply_styles():
     st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap');
-        .stApp { background-color: #ffffff !important; color: #000000 !important; }
-        * { color: #000000 !important; font-family: 'Noto Sans', sans-serif !important; }
-        [data-testid="stMetricLabel"] p { color: #000000 !important; font-weight: 900 !important; }
-        [data-testid="stMetricValue"] div { color: #000000 !important; font-weight: 800 !important; }
-        [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 2px solid #000000 !important; }
-        .header-line { border-bottom: 5px solid #d30616; margin-top: -6rem; margin-bottom: 2rem; padding-bottom: 1rem; }
-        [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stHeader"], footer { visibility: hidden !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        /* Main App Background */
+        .stApp {
+            background-color: #F9FAFB !important;
+            color: #111827 !important;
+        }
+        
+        /* Typography */
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif !important;
+        }
+        
+        /* Metric Styling */
+        [data-testid="stMetricLabel"] p {
+            color: #6B7280 !important;
+            font-size: 0.875rem !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+        }
+        [data-testid="stMetricValue"] div {
+            color: #111827 !important;
+            font-size: 2rem !important;
+            font-weight: 800 !important;
+        }
+        
+        /* Sidebar Styling */
+        [data-testid="stSidebar"] {
+            background-color: #ffffff !important;
+            border-right: 1px solid #E5E7EB !important;
+        }
+        
+        /* Header Line */
+        .header-line {
+            border-bottom: 4px solid #d30616;
+            margin-top: -5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 0.5rem;
+        }
+        
+        /* Button Styling */
+        .stButton>button {
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        /* Hide default elements */
+        [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stHeader"], footer {
+            visibility: hidden !important;
+        }
+        
+        /* Dataframe / Table styling */
+        [data-testid="stTable"] {
+            background-color: white !important;
+            border-radius: 10px !important;
+            overflow: hidden !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -97,11 +149,45 @@ END OF OFFICIAL REPORT
     return report
 
 def build_chart(df, x_col, y_col, color, orientation='v'):
-    fig = px.bar(df, x=x_col, y=y_col, orientation=orientation, color_discrete_sequence=[color])
-    fig.update_layout(paper_bgcolor='white', plot_bgcolor='white', font=dict(family="Noto Sans", size=14, color="black"),
-        xaxis=dict(tickfont=dict(color="black", weight='bold'), showline=True, linewidth=3, linecolor='black'),
-        yaxis=dict(tickfont=dict(color="black", weight='bold'), showline=True, linewidth=3, linecolor='black'))
+    # Rename columns for chart display
+    plot_df = df.rename(columns=COLUMN_MAPPING)
+    x_label = COLUMN_MAPPING.get(x_col, x_col)
+    y_label = COLUMN_MAPPING.get(y_col, y_col)
+    
+    fig = px.bar(plot_df, x=x_label, y=y_label, orientation=orientation, color_discrete_sequence=[color])
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)', 
+        font=dict(family="Inter", size=13, color="#374151"),
+        xaxis=dict(showgrid=False, showline=True, linecolor='#E5E7EB'),
+        yaxis=dict(showgrid=True, gridcolor='#F3F4F6', showline=False),
+        margin=dict(l=20, r=20, t=20, b=20)
+    )
     return fig
+
+# --- COLUMN DICTIONARY ---
+COLUMN_MAPPING = {
+    'reference_number': 'Reference Number',
+    'vendor_name': 'Vendor Name',
+    'contract_value': 'Contract Value',
+    'owner_org_title': 'Department',
+    'commodity_type': 'Commodity Type',
+    'reporting_period': 'Reporting Period',
+    'original_value': 'Original Value',
+    'amendment_value': 'Amendment Value',
+    'number_of_bids': 'Number of Bids',
+    'year': 'Fiscal Year'
+}
+
+HELP_TEXTS = {
+    'year': "The government financial year (April 1 to March 31).",
+    'depts': "Filter contracts by specific government departments or agencies.",
+    'reference_number': "The unique identifier assigned to the procurement contract.",
+    'vendor_name': "The legal name of the entity receiving the contract.",
+    'contract_value': "The total dollar value of the contract, including all amendments.",
+    'commodity_type': "Classification of the purchase (e.g., Goods, Services).",
+    'number_of_bids': "Total number of competitive bids received for this contract."
+}
 
 def main():
     apply_styles()
@@ -118,8 +204,18 @@ def main():
 
     with st.sidebar:
         st.markdown("## 🏛️ Controls")
-        year = st.selectbox("Select Fiscal Year", sorted(df['year'].dropna().unique()), index=0)
-        depts = st.multiselect("Filter Departments", sorted(df['owner_org_title'].unique()), default=df['owner_org_title'].unique()[:5])
+        year = st.selectbox(
+            "Select Fiscal Year", 
+            sorted(df['year'].dropna().unique()), 
+            index=0,
+            help=HELP_TEXTS['year']
+        )
+        depts = st.multiselect(
+            "Filter Departments", 
+            sorted(df['owner_org_title'].unique()), 
+            default=df['owner_org_title'].unique()[:5],
+            help=HELP_TEXTS['depts']
+        )
     
     f_df = df[(df['year'] == year) & (df['owner_org_title'].isin(depts))]
     
@@ -132,7 +228,8 @@ def main():
             data=st.session_state["report"],
             file_name=f"official_report_{year.replace('-', '_')}.txt",
             mime="text/plain",
-            use_container_width=True
+            use_container_width=True,
+            help="Export the current analysis as a formal government report."
         )
 
     t1, t2, t3 = st.tabs(["📊 Summary", "🔍 Risk Analysis", "🏢 Vendor Intel"])
@@ -146,23 +243,26 @@ def main():
         
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("**Spend by Category**")
+            st.markdown(f"**Spend by Category**", help=HELP_TEXTS['commodity_type'])
             cat_df = f_df.groupby('commodity_type')['contract_value'].sum().reset_index().head(10)
             st.plotly_chart(build_chart(cat_df, 'commodity_type', 'contract_value', '#d30616'), use_container_width=True)
         with c2:
-            st.markdown("**Top Departments**")
+            st.markdown("**Top Departments**", help="Top 10 departments by total spend in the selected year.")
             dept_df = f_df.groupby('owner_org_title')['contract_value'].sum().sort_values(ascending=False).head(10).reset_index()
             dept_df['owner_org_title'] = dept_df['owner_org_title'].str.slice(0, 30) + "..."
             st.plotly_chart(build_chart(dept_df, 'contract_value', 'owner_org_title', '#26374a', orientation='h'), use_container_width=True)
 
     with t2:
         st.markdown("### 🔍 Risk Indicators")
-        st.table(f_df[['reference_number', 'vendor_name', 'contract_value']].head(10))
+        st.markdown("*Note: Click on column headers to sort the table values.*")
+        risk_df = f_df[['reference_number', 'vendor_name', 'contract_value']].head(20).rename(columns=COLUMN_MAPPING)
+        st.dataframe(risk_df, hide_index=True, use_container_width=True)
 
     with t3:
         st.markdown("### 🏢 Vendor Intel")
         v_df = f_df.groupby('vendor_name')['contract_value'].agg(['sum', 'count']).sort_values('sum', ascending=False).head(20).reset_index()
-        st.table(v_df)
+        v_df = v_df.rename(columns={'vendor_name': 'Vendor Name', 'sum': 'Total Spend', 'count': 'Contract Count'})
+        st.dataframe(v_df, hide_index=True, use_container_width=True)
 
 if __name__ == "__main__":
     main()
