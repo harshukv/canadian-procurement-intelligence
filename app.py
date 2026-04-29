@@ -15,29 +15,36 @@ COLUMN_MAP = {
     'owner_org_title': 'Department', 'number_of_bids': 'Bids'
 }
 
+# --- HELPERS ---
+def clean_text(text):
+    """Fixes common UTF-8 encoding artifacts in French text"""
+    if not isinstance(text, str): return text
+    fixes = {
+        "â€™": "'", "Ã©": "é", "Ã": "à", "Ã¨": "è", 
+        "Ã§": "ç", "Ã»": "û", "â€“": "-", "Â": ""
+    }
+    for old, new in fixes.items():
+        text = text.replace(old, new)
+    return text
+
 # --- STYLES ---
 def apply_styles():
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
         
-        /* 1. Global Reset to Light Mode */
         .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainBlockContainer"] {
             background-color: #ffffff !important;
             color: #26374a !important;
             font-family: 'Noto Sans', sans-serif !important;
         }
 
-        /* 2. Sidebar Force Light */
         [data-testid="stSidebar"] {
             background-color: #f8f9fa !important;
             border-right: 1px solid #e0e0e0 !important;
         }
-        [data-testid="stSidebar"] * {
-            color: #26374a !important;
-        }
+        [data-testid="stSidebar"] * { color: #26374a !important; }
 
-        /* 3. Metric Cards (fixing the white-on-white bug) */
         [data-testid="stMetric"] {
             background-color: #ffffff !important;
             border: 1px solid #e0e0e0 !important;
@@ -45,47 +52,18 @@ def apply_styles():
             padding: 20px !important;
             border-radius: 4px !important;
         }
-        [data-testid="stMetricValue"] div {
-            color: #26374a !important;
-            font-weight: 700 !important;
-        }
-        [data-testid="stMetricLabel"] p {
-            color: #666666 !important;
-            font-weight: 600 !important;
-            text-transform: uppercase;
-            font-size: 0.8rem !important;
-        }
+        [data-testid="stMetricValue"] div { color: #26374a !important; font-weight: 700 !important; }
+        [data-testid="stMetricLabel"] p { color: #666666 !important; text-transform: uppercase; font-size: 0.8rem !important; }
 
-        /* 4. Official Government Header */
         .gov-header {
             background-color: #ffffff !important;
             border-bottom: 4px solid #d30616;
             padding: 1.5rem 2rem;
-            margin: -6rem -5rem 2rem -5rem; /* Removes default Streamlit gaps */
+            margin: -6rem -5rem 2rem -5rem;
             display: flex; align-items: center; gap: 1.5rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
-        /* 5. Tabs */
-        button[data-baseweb="tab"] {
-            color: #26374a !important;
-            font-weight: 600 !important;
-        }
-        button[aria-selected="true"] {
-            color: #d30616 !important;
-            border-bottom-color: #d30616 !important;
-        }
-
-        /* 6. Clean Tables */
-        .stTable {
-            border: 1px solid #eee !important;
-        }
-        th {
-            background-color: #f8f9fa !important;
-            color: #26374a !important;
-        }
-
-        /* Hide Streamlit Branding */
         [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stHeader"], footer {
             visibility: hidden !important; display: none !important;
         }
@@ -95,9 +73,7 @@ def apply_styles():
             <img src="https://www.canada.ca/etc/designs/canada/wet-boew/assets/sig-blk-en.svg" height="45">
             <div style="font-size:1.6rem; font-weight:700; color:#26374a; border-left:2px solid #d30616; padding-left:20px;">
                 Procurement Intelligence Portal
-                <div style="font-size:0.75rem; color:#d30616; text-transform:uppercase; letter-spacing:1px; margin-top:4px;">
-                    Transparency & Fiscal Oversight
-                </div>
+                <div style="font-size:0.75rem; color:#d30616; text-transform:uppercase; letter-spacing:1px; margin-top:4px;">Transparency & Fiscal Oversight</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -106,6 +82,10 @@ def apply_styles():
 def load_data():
     try:
         df = pd.read_excel("contracts_2021_2026_cleaned.xlsx")
+        # Fix Encoding Issues
+        df['owner_org_title'] = df['owner_org_title'].apply(clean_text)
+        df['vendor_name'] = df['vendor_name'].apply(clean_text)
+        
         df['commodity_full'] = df['commodity_type'].map(TYPE_MAP).fillna(df['commodity_type'])
         df['year'] = df['reporting_period'].astype(str).str.extract(r'(\d{4}-\d{4})')
         for col in ['contract_value', 'original_value', 'amendment_value']:
@@ -134,13 +114,11 @@ def calculate_kpis(df):
     if hhi > 2000: risk += 30
     return {"total_spend": total_spend, "contracts": n, "avg_val": avg_val, "amend_ratio": amend_ratio, "avg_bids": avg_bids, "hhi": hhi, "top3": top3, "risk_score": risk, "single_bid": single_bid}
 
-# --- MAIN ---
 def main():
     apply_styles()
     df = load_data()
     if df.empty: return
 
-    # Sidebar
     with st.sidebar:
         st.markdown("### 🏛️ Dashboard Controls")
         all_years = sorted(df['year'].dropna().unique().tolist())
@@ -149,17 +127,13 @@ def main():
         selected_dept = st.multiselect("Departments", all_depts, default=all_depts)
         st.markdown("---")
         st.write(f"📂 **Total Records:** {len(df):,}")
+        st.write(f"📅 **Filtered Count:** {len(df[df['year']==selected_year]):,}")
 
-    # Filter
     f_df = df[df['year'] == selected_year]
     if selected_dept:
         f_df = f_df[f_df['owner_org_title'].isin(selected_dept)]
 
     kpis = calculate_kpis(f_df)
-
-    with st.sidebar:
-        st.write(f"📅 **Filtered Count:** {len(f_df):,}")
-
     t1, t2, t3 = st.tabs(["📊 Summary", "🔍 Risk Analysis", "🏢 Vendor Intel"])
 
     with t1:
@@ -175,13 +149,15 @@ def main():
             st.markdown("**Spend by Category**")
             cat = f_df.groupby('commodity_full')['contract_value'].sum().reset_index()
             fig = px.bar(cat, x='commodity_full', y='contract_value', color_discrete_sequence=['#d30616'])
-            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#26374a', margin=dict(t=0, b=0))
+            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#26374a', margin=dict(t=10, b=10))
             st.plotly_chart(fig, use_container_width=True)
         with c2:
             st.markdown("**Top Departments**")
             dept = f_df.groupby('owner_org_title')['contract_value'].sum().sort_values(ascending=False).head(10).reset_index()
+            # Truncate long names for chart readability
+            dept['owner_org_title'] = dept['owner_org_title'].str.slice(0, 45) + "..."
             fig2 = px.bar(dept, y='owner_org_title', x='contract_value', orientation='h', color_discrete_sequence=['#26374a'])
-            fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#26374a', margin=dict(t=0, b=0))
+            fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#26374a', margin=dict(l=150, t=10, b=10))
             st.plotly_chart(fig2, use_container_width=True)
 
     with t2:
