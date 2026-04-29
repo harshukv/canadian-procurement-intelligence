@@ -14,46 +14,88 @@ COLUMN_MAP = {
     'contract_value': 'Contract Value ($)', 'commodity_full': 'Category',
     'owner_org_title': 'Department', 'number_of_bids': 'Bids'
 }
-TOOLTIPS = {
-    "total_spend": "Aggregate dollar value of all contracts.",
-    "contracts": "Total number of individual contracts.",
-    "avg_val": "Average cost per contract.",
-    "risk_score": "Procurement health score (0-100).",
-    "avg_bids": "Average number of competing vendors.",
-    "single_bid": "% of contracts with only one vendor.",
-    "amend_ratio": "Total amendments relative to budget.",
-    "hhi": "Market concentration index (HHI).",
-    "top3": "Share of budget held by top 3 vendors."
-}
 
 # --- STYLES ---
 def apply_styles():
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap');
-        html, body, [class*="css"] { font-family: 'Noto Sans', sans-serif; }
-        [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stHeader"], footer { visibility: hidden; display: none; }
-        .gov-header { background-color: #f5f5f5; border-bottom: 3px solid #d30616; padding: 1rem 2rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; }
-        .stMetric { background-color: #f8f9fa; border-left: 5px solid #d30616; padding: 15px; border-radius: 4px; }
-        .sec-title { font-size: 1.4rem; font-weight: 700; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin: 20px 0; }
+        
+        /* THE NUCLEAR OPTION: Global Override for Light Mode */
+        html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainBlockContainer"], .main {
+            background-color: #ffffff !important;
+            color: #26374a !important;
+        }
+
+        /* Sidebar Force Light */
+        [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
+            background-color: #f8f9fa !important;
+            color: #26374a !important;
+        }
+        
+        /* Metric Cards */
+        [data-testid="stMetric"], .stMetric {
+            background-color: #ffffff !important;
+            border: 1px solid #dee2e6 !important;
+            border-left: 5px solid #d30616 !important;
+            color: #26374a !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        }
+        
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
+            color: #26374a !important;
+        }
+
+        /* Sidebar Text and Labels */
+        [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
+            color: #26374a !important;
+        }
+
+        /* Headers */
+        h1, h2, h3, .sec-title {
+            color: #26374a !important;
+        }
+
+        /* Tabs */
+        [data-baseweb="tab-list"] {
+            background-color: #ffffff !important;
+        }
+        [data-baseweb="tab"] {
+            color: #495057 !important;
+        }
+        [data-baseweb="tab"][aria-selected="true"] {
+            color: #d30616 !important;
+            border-bottom-color: #d30616 !important;
+        }
+
+        /* Hide Streamlit Elements */
+        [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stHeader"], footer {
+            visibility: hidden !important; display: none !important;
+        }
+
+        .gov-header {
+            background-color: #ffffff !important;
+            border-bottom: 4px solid #d30616;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            display: flex; align-items: center; gap: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
         </style>
+        
         <div class="gov-header">
-            <img src="https://www.canada.ca/etc/designs/canada/wet-boew/assets/sig-blk-en.svg" height="35">
-            <div style="font-size:1.5rem; font-weight:700; color:#333; border-left:1px solid #d30616; padding-left:15px;">Procurement Intelligence Portal</div>
+            <img src="https://www.canada.ca/etc/designs/canada/wet-boew/assets/sig-blk-en.svg" height="40">
+            <div style="font-size:1.6rem; font-weight:700; color:#26374a; border-left:2px solid #d30616; padding-left:20px; line-height:1.2;">
+                Procurement Intelligence Portal<br>
+                <span style="font-size:0.8rem; color:#666; font-weight:400; text-transform:uppercase; letter-spacing:1px;">Government of Canada Transparency</span>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
 # --- DATA ---
 def load_data():
     try:
-        # Check if file exists locally
-        import os
-        filename = "contracts_2021_2026_cleaned.xlsx"
-        if not os.path.exists(filename):
-            st.error(f"❌ File not found: {filename}")
-            return pd.DataFrame()
-            
-        df = pd.read_excel(filename)
+        df = pd.read_excel("contracts_2021_2026_cleaned.xlsx")
         df['commodity_full'] = df['commodity_type'].map(TYPE_MAP).fillna(df['commodity_type'])
         df['year'] = df['reporting_period'].astype(str).str.extract(r'(\d{4}-\d{4})')
         for col in ['contract_value', 'original_value', 'amendment_value']:
@@ -86,10 +128,7 @@ def calculate_kpis(df):
 def main():
     apply_styles()
     df = load_data()
-    
-    if df.empty:
-        st.warning("⚠️ The dataset is currently empty. Please check the Excel file.")
-        return
+    if df.empty: return
 
     # Sidebar
     with st.sidebar:
@@ -115,7 +154,7 @@ def main():
     t1, t2, t3 = st.tabs(["📊 Summary", "🔍 Risk", "🏢 Vendors"])
 
     with t1:
-        st.markdown(f"<div class='sec-title'>Fiscal Year {selected_year} Overview</div>", unsafe_allow_html=True)
+        st.markdown(f"### Fiscal Year {selected_year} Overview")
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Total Spend", f"${kpis['total_spend']/1e6:.1f}M")
         m2.metric("Contracts", f"{kpis['contracts']:,}")
@@ -126,14 +165,18 @@ def main():
         with c1:
             st.markdown("**Spend by Category**")
             cat = f_df.groupby('commodity_full')['contract_value'].sum().reset_index()
-            st.plotly_chart(px.bar(cat, x='commodity_full', y='contract_value', color_discrete_sequence=['#d30616']), use_container_width=True)
+            fig = px.bar(cat, x='commodity_full', y='contract_value', color_discrete_sequence=['#d30616'])
+            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#26374a')
+            st.plotly_chart(fig, use_container_width=True)
         with c2:
             st.markdown("**Top Departments**")
             dept = f_df.groupby('owner_org_title')['contract_value'].sum().sort_values(ascending=False).head(10).reset_index()
-            st.plotly_chart(px.bar(dept, y='owner_org_title', x='contract_value', orientation='h'), use_container_width=True)
+            fig2 = px.bar(dept, y='owner_org_title', x='contract_value', orientation='h', color_discrete_sequence=['#26374a'])
+            fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#26374a')
+            st.plotly_chart(fig2, use_container_width=True)
 
     with t2:
-        st.markdown("<div class='sec-title'>Competition & Risk</div>", unsafe_allow_html=True)
+        st.markdown("### Competition & Risk")
         r1, r2, r3 = st.columns(3)
         r1.metric("Avg Bids", f"{kpis['avg_bids']:.2f}")
         r2.metric("Single-Bid %", f"{kpis['single_bid']:.1f}%")
@@ -142,28 +185,22 @@ def main():
         st.markdown("**High-Risk Contracts (>50% Amendment Growth)**")
         high_risk = f_df[f_df['amendment_value'] > (f_df['original_value'] * 0.5)].head(15)
         if not high_risk.empty:
-            # Use st.table for better compatibility
             st.table(high_risk[['reference_number', 'vendor_name', 'original_value', 'amendment_value']].rename(columns=COLUMN_MAP))
         else:
             st.info("No high-risk contracts found in this selection.")
 
     with t3:
-        st.markdown("<div class='sec-title'>Vendor Analysis</div>", unsafe_allow_html=True)
+        st.markdown("### Vendor Analysis")
         v1, v2 = st.columns(2)
         v1.metric("Top 3 Market Share", f"{kpis['top3']:.1f}%")
         v2.metric("Market HHI", f"{kpis['hhi']:.0f}")
 
         st.markdown("**Leading Vendors by Volume**")
-        # Ensure vendor names aren't empty
         top_v = f_df.groupby('vendor_name')['contract_value'].agg(['sum', 'count']).sort_values('sum', ascending=False).head(20).reset_index()
         if not top_v.empty:
             top_v.columns = ['Vendor Name', 'Total Spend ($)', 'Contracts']
-            # Format numbers for static table
             top_v['Total Spend ($)'] = top_v['Total Spend ($)'].apply(lambda x: f"${x:,.0f}")
             st.table(top_v)
-        else:
-            st.warning("No vendor names found in the data.")
-            st.write("Raw vendors:", f_df['vendor_name'].head(5).tolist())
 
 if __name__ == "__main__":
     main()
