@@ -58,7 +58,6 @@ class ProcurementPDF(FPDF):
         self.ln()
 
 def generate_pdf_report(f_df, year):
-    # Calculations
     total_spend = f_df['contract_value'].sum()
     total_orig = f_df['original_value'].sum()
     total_amend = f_df['amendment_value'].sum()
@@ -70,8 +69,6 @@ def generate_pdf_report(f_df, year):
 
     pdf = ProcurementPDF()
     pdf.add_page()
-    
-    # Title Page Branding
     pdf.ln(50)
     pdf.set_font('helvetica', 'B', 24)
     pdf.multi_cell(0, 15, "Government of Canada\nProcurement Intelligence Report", align='C')
@@ -80,7 +77,6 @@ def generate_pdf_report(f_df, year):
     pdf.cell(0, 10, f"Fiscal Year: {year}", ln=1, align='C')
     pdf.cell(0, 10, f"Generated on: {pd.Timestamp.now().strftime('%Y-%m-%d')}", ln=1, align='C')
     
-    # Executive Summary
     pdf.add_page()
     pdf.chapter_title("1. EXECUTIVE SUMMARY")
     summary = (f"During the fiscal year {year}, the Government of Canada committed a total of "
@@ -89,28 +85,21 @@ def generate_pdf_report(f_df, year):
                f"amendment-to-original budget ratio of {amend_ratio:.1f}%.")
     pdf.chapter_body(summary)
 
-    # Key Metrics
     pdf.chapter_title("2. KEY METRICS OVERVIEW")
-    pdf.chapter_body(f"Total Spend: ${total_spend:,.2f}\n(Total value of all contracts awarded)\n\n"
-                     f"Number of Contracts: {len(f_df):,}\n(Total volume of transactions)\n\n"
-                     f"Average Contract Value: ${avg_val:,.2f}\n(Mean financial size of work)")
+    pdf.chapter_body(f"Total Spend: ${total_spend:,.2f}\n"
+                     f"Number of Contracts: {len(f_df):,}\n"
+                     f"Average Contract Value: ${avg_val:,.2f}")
 
-    # Competition
     pdf.chapter_title("3. COMPETITION & RISK ANALYSIS")
     risk_text = (f"Average Bids per Contract: {avg_bids:.2f}\n"
-                 f"Insight: Lower competition levels may indicate market dependency.\n\n"
-                 f"Amendment Ratio: {amend_ratio:.1f}%\n"
-                 f"Insight: Reflects cost increases added after initial contract awards.")
+                 f"Amendment Ratio: {amend_ratio:.1f}%")
     pdf.chapter_body(risk_text)
 
-    # Glossary
     pdf.chapter_title("4. GLOSSARY")
     glossary = ("Contract Value: Final total dollar amount including amendments.\n"
-                "Amendment Value: Costs added after the initial contract award.\n"
+                "Amendment Value: Costs added after initial award.\n"
                 "Number of Bids: Count of vendors competing for the work.")
     pdf.chapter_body(glossary)
-
-    # Return as bytes
     return pdf.output()
 
 def main():
@@ -118,7 +107,6 @@ def main():
     df = load_data()
     if df.empty: return
 
-    # Top Toolbar
     st.markdown('<div class="header-line"></div>', unsafe_allow_html=True)
     h_col1, h_col2 = st.columns([9, 2])
     
@@ -133,7 +121,6 @@ def main():
     
     f_df = df[(df['year'] == year) & (df['owner_org_title'].isin(depts))]
     
-    # PDF logic
     try:
         report_pdf = generate_pdf_report(f_df, year)
         with h_col2:
