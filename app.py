@@ -17,12 +17,8 @@ COLUMN_MAP = {
 
 # --- HELPERS ---
 def clean_text(text):
-    """Fixes common UTF-8 encoding artifacts in French text"""
     if not isinstance(text, str): return text
-    fixes = {
-        "â€™": "'", "Ã©": "é", "Ã": "à", "Ã¨": "è", 
-        "Ã§": "ç", "Ã»": "û", "â€“": "-", "Â": ""
-    }
+    fixes = {"â€™": "'", "Ã©": "é", "Ã": "à", "Ã¨": "è", "Ã§": "ç", "Ã»": "û", "â€“": "-", "Â": ""}
     for old, new in fixes.items():
         text = text.replace(old, new)
     return text
@@ -33,18 +29,18 @@ def apply_styles():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
         
+        /* Global Light Mode Force */
         .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainBlockContainer"] {
             background-color: #ffffff !important;
             color: #26374a !important;
             font-family: 'Noto Sans', sans-serif !important;
         }
 
-        [data-testid="stSidebar"] {
-            background-color: #f8f9fa !important;
-            border-right: 1px solid #e0e0e0 !important;
-        }
+        /* Sidebar Fixes */
+        [data-testid="stSidebar"] { background-color: #f8f9fa !important; border-right: 1px solid #e0e0e0 !important; }
         [data-testid="stSidebar"] * { color: #26374a !important; }
 
+        /* Metric Card Visibility */
         [data-testid="stMetric"] {
             background-color: #ffffff !important;
             border: 1px solid #e0e0e0 !important;
@@ -54,6 +50,15 @@ def apply_styles():
         }
         [data-testid="stMetricValue"] div { color: #26374a !important; font-weight: 700 !important; }
         [data-testid="stMetricLabel"] p { color: #666666 !important; text-transform: uppercase; font-size: 0.8rem !important; }
+
+        /* TABLE VISIBILITY FIX */
+        .stTable { background-color: #ffffff !important; }
+        .stTable td, .stTable th { color: #26374a !important; border-bottom: 1px solid #eee !important; }
+        .stTable th { background-color: #f8f9fa !important; font-weight: 700 !important; text-align: left !important; }
+
+        /* Tab Visibility Fix */
+        button[data-baseweb="tab"] { color: #26374a !important; font-weight: 600 !important; }
+        button[aria-selected="true"] { color: #d30616 !important; border-bottom-color: #d30616 !important; }
 
         .gov-header {
             background-color: #ffffff !important;
@@ -82,10 +87,8 @@ def apply_styles():
 def load_data():
     try:
         df = pd.read_excel("contracts_2021_2026_cleaned.xlsx")
-        # Fix Encoding Issues
         df['owner_org_title'] = df['owner_org_title'].apply(clean_text)
         df['vendor_name'] = df['vendor_name'].apply(clean_text)
-        
         df['commodity_full'] = df['commodity_type'].map(TYPE_MAP).fillna(df['commodity_type'])
         df['year'] = df['reporting_period'].astype(str).str.extract(r'(\d{4}-\d{4})')
         for col in ['contract_value', 'original_value', 'amendment_value']:
@@ -154,7 +157,6 @@ def main():
         with c2:
             st.markdown("**Top Departments**")
             dept = f_df.groupby('owner_org_title')['contract_value'].sum().sort_values(ascending=False).head(10).reset_index()
-            # Truncate long names for chart readability
             dept['owner_org_title'] = dept['owner_org_title'].str.slice(0, 45) + "..."
             fig2 = px.bar(dept, y='owner_org_title', x='contract_value', orientation='h', color_discrete_sequence=['#26374a'])
             fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#26374a', margin=dict(l=150, t=10, b=10))
