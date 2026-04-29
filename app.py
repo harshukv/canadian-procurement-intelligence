@@ -52,17 +52,12 @@ def apply_canada_styles():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
 
-        /* ── GLOBAL: pure white everywhere ── */
+        /* GLOBAL white */
         html, body { background-color: #ffffff !important; color: #26374a !important; }
-
-        [data-testid="stApp"],
-        [data-testid="stAppViewContainer"],
-        [data-testid="stVerticalBlock"],
-        [data-testid="stMain"],
-        [data-testid="stMainBlockContainer"],
-        .main, .block-container,
-        div[class*="appview"],
-        div[class*="main"] {
+        [data-testid="stApp"], [data-testid="stAppViewContainer"],
+        [data-testid="stVerticalBlock"], [data-testid="stMain"],
+        [data-testid="stMainBlockContainer"], .main, .block-container,
+        div[class*="appview"], div[class*="main"] {
             background-color: #ffffff !important;
             color: #26374a !important;
             font-family: 'Noto Sans', sans-serif !important;
@@ -81,6 +76,31 @@ def apply_canada_styles():
             visibility: hidden !important; display: none !important;
         }
 
+        /* ── FIX DARK DROPDOWNS & MULTISELECT ── */
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="select"] > div:focus-within,
+        div[data-baseweb="popover"],
+        div[data-baseweb="menu"],
+        [data-testid="stMultiSelect"] div[data-baseweb="select"] > div,
+        [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+            background-color: #ffffff !important;
+            color: #26374a !important;
+            border-color: #cccccc !important;
+        }
+        /* Tag chips inside multiselect */
+        [data-baseweb="tag"] {
+            background-color: #d30616 !important;
+            color: #ffffff !important;
+        }
+        /* Dropdown option list */
+        ul[role="listbox"], li[role="option"] {
+            background-color: #ffffff !important;
+            color: #26374a !important;
+        }
+        li[role="option"]:hover {
+            background-color: #f0f0f0 !important;
+        }
+
         /* Metric cards */
         [data-testid="stMetric"] {
             background-color: #ffffff !important;
@@ -90,82 +110,87 @@ def apply_canada_styles():
             padding: 18px 20px !important;
             box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
         }
-        [data-testid="stMetricLabel"] p { color: #666666 !important; font-size: 0.82rem !important; }
-        [data-testid="stMetricValue"]  { color: #26374a !important; font-weight: 700 !important; }
+        [data-testid="stMetricLabel"] p { color: #666666 !important; font-size: 0.85rem !important; }
+        [data-testid="stMetricValue"] { color: #26374a !important; font-weight: 700 !important; font-size: 1.6rem !important; }
 
-        /* Tabs */
+        /* Tabs - LARGER FONT */
         [data-baseweb="tab-list"] {
             background-color: #ffffff !important;
-            border-bottom: 2px solid #d30616 !important;
+            border-bottom: 3px solid #d30616 !important;
         }
         [data-baseweb="tab"] {
             background-color: #ffffff !important;
             color: #26374a !important;
-            font-weight: 600 !important;
+            font-weight: 700 !important;
+            font-size: 1.05rem !important;
+            padding: 12px 20px !important;
         }
         [aria-selected="true"][data-baseweb="tab"] {
             color: #d30616 !important;
             border-bottom: 3px solid #d30616 !important;
         }
-        [data-testid="stTabsContent"] {
-            background-color: #ffffff !important;
-        }
+        [data-testid="stTabsContent"] { background-color: #ffffff !important; }
 
-        /* Plotly iframe wrapper */
+        /* Plotly */
         iframe, .js-plotly-plot, .plotly, .plotly-graph-div {
             background-color: #ffffff !important;
         }
 
-        /* DataFrames */
-        [data-testid="stDataFrame"] { background-color: #ffffff !important; }
-        .dvn-scroller { background-color: #ffffff !important; }
-
-        /* Inputs */
-        [data-testid="stSelectbox"] > div > div,
-        [data-testid="stMultiSelect"] > div > div {
+        /* DataFrames - always white */
+        [data-testid="stDataFrame"],
+        [data-testid="stDataFrame"] > div,
+        .dvn-scroller, .dvn-head, .dvn-body {
             background-color: #ffffff !important;
             color: #26374a !important;
         }
 
-        /* Info/success/warning boxes */
+        /* Alert boxes */
         [data-testid="stAlert"] {
             background-color: #f0f7ff !important;
             border-left: 4px solid #1f7ac3 !important;
             color: #1a3d5c !important;
         }
 
-        /* Divider */
         hr { border-color: #eeeeee !important; }
 
-        /* Header banner */
+        /* ── HEADER ── */
         .header-banner {
-            background-color: #ffffff;
-            padding: 1rem 2rem;
-            border-bottom: 4px solid #d30616;
+            background-color: #26374a;
+            padding: 1.2rem 2rem;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            gap: 1.2rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
         }
         .header-title {
-            color: #26374a;
-            font-size: 1.2rem;
-            font-weight: 700;
-            line-height: 1.4;
+            color: #ffffff;
+            font-size: 1.55rem;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            line-height: 1.3;
+        }
+        .header-title span.red-bar {
+            display: inline-block;
+            width: 4px;
+            height: 1.4em;
+            background: #d30616;
+            margin-right: 10px;
+            vertical-align: middle;
+            border-radius: 2px;
         }
         .header-subtitle {
-            color: #777777;
-            font-size: 0.8rem;
-            margin-top: 3px;
+            color: #bdc8d4;
+            font-size: 0.82rem;
+            margin-top: 4px;
         }
         </style>
 
         <div class="header-banner">
-            <span style="font-size:2.5rem; line-height:1;">&#127464;&#127462;</span>
+            <span style="font-size:3rem; line-height:1;">&#127464;&#127462;</span>
             <div>
                 <div class="header-title">
-                    Procurement Intelligence Portal &nbsp;|&nbsp; Portail d'intelligence en approvisionnement
+                    <span class="red-bar"></span>CA Procurement Intelligence Portal
                 </div>
                 <div class="header-subtitle">
                     Government of Canada &nbsp;&middot;&nbsp; Public Spending Transparency &amp; Analytics
@@ -434,9 +459,9 @@ def main():
         if not high_risk.empty:
             cols = [c for c in ['reference_number', 'vendor_name', 'original_value', 'amendment_value', 'commodity_full'] if c in high_risk.columns]
             display_df = high_risk[cols].rename(columns=COLUMN_MAP).head(20)
-            st.dataframe(display_df, hide_index=True, use_container_width=True)
+            st.dataframe(display_df, hide_index=True, use_container_width=True, height=400)
         else:
-            st.success("✅ No high-amendment contracts flagged for the selected filters.")
+            st.info("ℹ️ No contracts flagged: no amendment value exceeded 50% of original value for this filter.")
 
     # ===== TAB 3: VENDOR INTELLIGENCE =====
     with tab3:
@@ -487,13 +512,17 @@ def main():
         top_vendors_table['Market Share (%)'] = (
             top_vendors_table['Total Spend ($)'] / current_kpis['total_spend'] * 100
         ).round(2)
+        st.markdown("**Top Vendors by Fiscal Volume**")
         st.dataframe(
-            top_vendors_table.style.format({
-                'Total Spend ($)': '${:,.0f}',
-                'Market Share (%)': '{:.2f}%'
-            }),
+            top_vendors_table,
             hide_index=True,
-            use_container_width=True
+            use_container_width=True,
+            height=500,
+            column_config={
+                'Total Spend ($)': st.column_config.NumberColumn('Total Spend ($)', format='$%,.0f'),
+                'Market Share (%)': st.column_config.NumberColumn('Market Share (%)', format='%.2f%%'),
+                'Contract Count': st.column_config.NumberColumn('Contracts'),
+            }
         )
 
 
