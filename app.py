@@ -1,208 +1,221 @@
 import streamlit as st
-import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 import numpy as np
 
 # --- PAGE CONFIG ---
 st.set_page_config(
-    page_title="Procurement Intelligence - Government of Canada",
+    page_title="CA Procurement Intelligence Portal",
     page_icon="🇨🇦",
     layout="wide"
 )
 
 # --- CONSTANTS ---
 TYPE_MAP = {'S': 'Services', 'G': 'Goods', 'C': 'Construction'}
-
 COLUMN_MAP = {
-    'reference_number': 'Reference Number',
+    'reference_number': 'Reference #',
     'vendor_name': 'Vendor Name',
-    'original_value': 'Original Value',
-    'amendment_value': 'Amendment Value',
-    'contract_value': 'Contract Value',
-    'commodity_full': 'Procurement Category',
-    'owner_org_title': 'Department Name',
-    'number_of_bids': 'Number of Bids'
+    'original_value': 'Original Value ($)',
+    'amendment_value': 'Amendment Value ($)',
+    'contract_value': 'Contract Value ($)',
+    'commodity_full': 'Category',
+    'owner_org_title': 'Department',
+    'number_of_bids': 'Bids'
 }
-
 TOOLTIPS = {
-    "total_spend": "The aggregate dollar value of all contracts awarded during the selected period.",
-    "contracts": "The total number of individual legal agreements signed between the government and vendors.",
-    "avg_val": "The mathematical average cost of a single contract.",
-    "risk_score": "A calculated indicator of procurement health (0-100). A higher score means better health. Penalizes low competition and high cost overruns.",
-    "avg_bids": "The average number of competing companies per contract. Values below 2 indicate critically low market competition.",
-    "single_bid": "The percentage of contracts awarded where only one vendor submitted a proposal. A high rate is a key risk indicator.",
-    "amend_ratio": "The total value of price increases (amendments) relative to the total budget. High ratios indicate poor initial scoping.",
-    "hhi": "Herfindahl-Hirschman Index: Measures market concentration. Scores above 2,500 indicate a monopoly or oligopoly risk.",
-    "top3": "The share of the total budget controlled by the top three largest vendors. High concentration reduces competitive pressure."
+    "total_spend": "Aggregate dollar value of all contracts awarded in the selected period.",
+    "contracts": "Total number of individual contracts signed between the government and vendors.",
+    "avg_val": "Mathematical average cost per contract.",
+    "risk_score": "Procurement health score (0–100). Higher is healthier. Penalizes low competition and high cost overruns.",
+    "avg_bids": "Average number of competing vendors per contract. Below 2 indicates critically low competition.",
+    "single_bid": "% of contracts where only one vendor submitted a bid. A high rate is a key risk indicator.",
+    "amend_ratio": "Total amendments relative to total budget. High values indicate poor initial scoping.",
+    "hhi": "Herfindahl-Hirschman Index. Above 2,500 indicates monopoly/oligopoly risk.",
+    "top3": "Share of total budget held by the top 3 vendors. High concentration reduces competition."
 }
 
 # --- CHART DEFAULTS ---
 CHART_LAYOUT = dict(
     paper_bgcolor='#ffffff',
     plot_bgcolor='#ffffff',
-    font=dict(family='Noto Sans, sans-serif', color='#26374a'),
-    margin=dict(t=20, b=20, l=10, r=10),
+    font=dict(family='Noto Sans, sans-serif', color='#26374a', size=12),
+    margin=dict(t=10, b=30, l=10, r=10),
 )
-AXIS_STYLE = dict(showgrid=True, gridcolor='#eeeeee', linecolor='#cccccc', tickfont=dict(color='#26374a'))
+AXIS_STYLE = dict(
+    showgrid=True, gridcolor='#f0f0f0',
+    linecolor='#e0e0e0', tickfont=dict(color='#555', size=11)
+)
 
 # --- STYLES ---
-def apply_canada_styles():
+def apply_styles():
     st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700;800&display=swap');
 
-        /* GLOBAL white */
-        html, body { background-color: #ffffff !important; color: #26374a !important; }
+        /* ── BASE ── */
+        html, body { background-color: #f0f2f5 !important; font-family: 'Noto Sans', sans-serif !important; }
+
         [data-testid="stApp"], [data-testid="stAppViewContainer"],
-        [data-testid="stVerticalBlock"], [data-testid="stMain"],
-        [data-testid="stMainBlockContainer"], .main, .block-container,
-        div[class*="appview"], div[class*="main"] {
-            background-color: #ffffff !important;
-            color: #26374a !important;
+        [data-testid="stMain"], [data-testid="stMainBlockContainer"],
+        [data-testid="stVerticalBlock"], .main, .block-container {
+            background-color: #f0f2f5 !important;
             font-family: 'Noto Sans', sans-serif !important;
+            color: #26374a !important;
+            padding-top: 0 !important;
         }
 
-        /* Sidebar */
-        section[data-testid="stSidebar"],
+        /* ── SIDEBAR ── */
         section[data-testid="stSidebar"] > div {
-            background-color: #fafafa !important;
-            border-right: 1px solid #e5e5e5 !important;
+            background-color: #ffffff !important;
+            border-right: 1px solid #dde3ea !important;
+            padding-top: 0 !important;
+        }
+        section[data-testid="stSidebar"] label,
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] .stCaption { color: #26374a !important; }
+        .sidebar-filter-label {
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 1.2px;
+            text-transform: uppercase; color: #999 !important;
+            margin: 16px 0 4px 0; display: block;
         }
 
-        /* Hide Streamlit chrome */
+        /* ── HIDE CHROME ── */
         [data-testid="stToolbar"], [data-testid="stDecoration"],
         [data-testid="stHeader"], footer {
             visibility: hidden !important; display: none !important;
         }
 
-        /* ── FIX DARK DROPDOWNS & MULTISELECT ── */
+        /* ── DROPDOWNS & MULTISELECT ── */
         div[data-baseweb="select"] > div,
-        div[data-baseweb="select"] > div:focus-within,
-        div[data-baseweb="popover"],
-        div[data-baseweb="menu"],
-        [data-testid="stMultiSelect"] div[data-baseweb="select"] > div,
-        [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+        div[data-baseweb="popover"], div[data-baseweb="menu"] {
             background-color: #ffffff !important;
             color: #26374a !important;
-            border-color: #cccccc !important;
+            border-color: #c8d0d8 !important;
+            border-radius: 6px !important;
         }
-        /* Tag chips inside multiselect - WHITE with border */
         [data-baseweb="tag"] {
-            background-color: #f0f4f8 !important;
+            background-color: #eef1f5 !important;
             color: #26374a !important;
-            border: 1px solid #b0bec5 !important;
+            border: 1px solid #c0ccd8 !important;
             border-radius: 4px !important;
+            font-size: 0.78rem !important;
         }
-        [data-baseweb="tag"] span { color: #26374a !important; }
-        [data-baseweb="tag"] [data-testid="stIcon"],
-        [data-baseweb="tag"] svg { fill: #26374a !important; color: #26374a !important; }
-        /* Dropdown option list */
+        [data-baseweb="tag"] span, [data-baseweb="tag"] svg {
+            color: #26374a !important; fill: #26374a !important;
+        }
         ul[role="listbox"], li[role="option"] {
-            background-color: #ffffff !important;
-            color: #26374a !important;
+            background-color: #ffffff !important; color: #26374a !important;
         }
-        li[role="option"]:hover {
-            background-color: #f0f0f0 !important;
-        }
+        li[role="option"]:hover { background-color: #f2f5f8 !important; }
 
-        /* Metric cards */
+        /* ── METRIC CARDS ── */
         [data-testid="stMetric"] {
             background-color: #ffffff !important;
-            border: 1px solid #e8e8e8 !important;
-            border-left: 5px solid #d30616 !important;
-            border-radius: 6px !important;
+            border: 1px solid #e2e8f0 !important;
+            border-left: 4px solid #d30616 !important;
+            border-radius: 8px !important;
             padding: 18px 20px !important;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
         }
-        [data-testid="stMetricLabel"] p { color: #666666 !important; font-size: 0.85rem !important; }
-        [data-testid="stMetricValue"] { color: #26374a !important; font-weight: 700 !important; font-size: 1.6rem !important; }
+        [data-testid="stMetricLabel"] p {
+            color: #607080 !important; font-size: 0.75rem !important;
+            font-weight: 700 !important; text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+        [data-testid="stMetricValue"] {
+            color: #1a2a3a !important; font-weight: 800 !important; font-size: 1.8rem !important;
+        }
+        [data-testid="stMetricDelta"] svg { display: none; }
 
-        /* Tabs - LARGER FONT */
+        /* ── SECTION LABELS ── */
+        .sec-label {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.4px; color: #d30616; margin-bottom: 2px;
+        }
+        .sec-title {
+            font-size: 1.05rem; font-weight: 700; color: #26374a;
+            margin-bottom: 14px; padding-bottom: 10px;
+            border-bottom: 1px solid #e8ecf0;
+        }
+        .chart-label {
+            font-size: 0.82rem; font-weight: 700; color: #445566;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        /* ── TABS ── */
         [data-baseweb="tab-list"] {
             background-color: #ffffff !important;
-            border-bottom: 3px solid #d30616 !important;
+            border-bottom: 2px solid #e0e6ec !important;
+            padding: 0 8px !important;
         }
         [data-baseweb="tab"] {
             background-color: #ffffff !important;
-            color: #26374a !important;
-            font-weight: 700 !important;
-            font-size: 1.05rem !important;
+            color: #607080 !important;
+            font-weight: 600 !important; font-size: 0.9rem !important;
             padding: 12px 20px !important;
+            border-bottom: 3px solid transparent !important;
         }
         [aria-selected="true"][data-baseweb="tab"] {
             color: #d30616 !important;
             border-bottom: 3px solid #d30616 !important;
         }
-        [data-testid="stTabsContent"] { background-color: #ffffff !important; }
-
-        /* Plotly */
-        iframe, .js-plotly-plot, .plotly, .plotly-graph-div {
-            background-color: #ffffff !important;
+        [data-testid="stTabsContent"] {
+            background-color: #f0f2f5 !important;
+            padding-top: 20px !important;
         }
 
-        /* DataFrames - always white */
+        /* ── PLOTLY ── */
+        iframe, .js-plotly-plot, .plotly-graph-div {
+            background-color: #ffffff !important;
+            border-radius: 8px !important;
+        }
+
+        /* ── DATAFRAMES ── */
         [data-testid="stDataFrame"],
         [data-testid="stDataFrame"] > div,
         .dvn-scroller, .dvn-head, .dvn-body {
-            background-color: #ffffff !important;
-            color: #26374a !important;
+            background-color: #ffffff !important; color: #26374a !important;
         }
 
-        /* Alert boxes */
+        /* ── ALERTS ── */
         [data-testid="stAlert"] {
-            background-color: #f0f7ff !important;
-            border-left: 4px solid #1f7ac3 !important;
-            color: #1a3d5c !important;
+            border-radius: 8px !important; font-size: 0.88rem !important;
         }
 
-        hr { border-color: #eeeeee !important; }
+        hr { border-color: #e2e8f0 !important; }
 
-        /* ── HEADER: Official Canada.ca style ── */
+        /* ── HEADER ── */
         .gov-header {
             background-color: #ffffff;
             border-bottom: 3px solid #d30616;
-            padding: 0.75rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0;
+            padding: 0.8rem 1.5rem;
+            display: flex; align-items: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.07);
         }
-        .gov-header-left {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        .gov-header-divider {
-            width: 1px;
-            height: 36px;
-            background-color: #d30616;
-            display: inline-block;
-        }
-        .gov-portal-title {
-            color: #26374a;
-            font-size: 1.35rem;
-            font-weight: 800;
-            letter-spacing: -0.2px;
-            line-height: 1.2;
-        }
-        .gov-portal-subtitle {
-            color: #666666;
-            font-size: 0.78rem;
-            margin-top: 2px;
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
+        .gov-header-inner { display: flex; align-items: center; gap: 1.2rem; }
+        .gov-divider { width: 1px; height: 32px; background: #d30616; }
+        .gov-title { color: #26374a; font-size: 1.25rem; font-weight: 800; line-height: 1.2; }
+        .gov-subtitle { color: #777; font-size: 0.72rem; margin-top: 3px;
+            text-transform: uppercase; letter-spacing: 0.6px; }
+
+        /* ── FOOTER ── */
+        .gov-footer {
+            margin-top: 48px; padding: 14px 1.5rem;
+            border-top: 2px solid #d30616; background: #ffffff;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.72rem; color: #888;
         }
         </style>
 
         <div class="gov-header">
-            <div class="gov-header-left">
+            <div class="gov-header-inner">
                 <img src="https://www.canada.ca/etc/designs/canada/wet-boew/assets/sig-blk-en.svg"
-                     alt="Government of Canada" style="height:38px; width:auto;" />
-                <div class="gov-header-divider"></div>
+                     alt="Government of Canada" style="height:34px; width:auto;" />
+                <div class="gov-divider"></div>
                 <div>
-                    <div class="gov-portal-title">CA Procurement Intelligence Portal</div>
-                    <div class="gov-portal-subtitle">Public Spending Transparency &amp; Analytics</div>
+                    <div class="gov-title">CA Procurement Intelligence Portal</div>
+                    <div class="gov-subtitle">Public Spending Transparency &amp; Analytics</div>
                 </div>
             </div>
         </div>
@@ -216,13 +229,12 @@ def load_and_prepare_data():
         df = pd.read_excel("contracts_2021_2026_cleaned.xlsx")
         df['commodity_full'] = df['commodity_type'].map(TYPE_MAP).fillna(df['commodity_type'])
         df['year'] = df['reporting_period'].astype(str).str.extract(r'(\d{4}-\d{4})')
-        df['contract_value'] = pd.to_numeric(df['contract_value'], errors='coerce').fillna(0)
-        df['original_value'] = pd.to_numeric(df['original_value'], errors='coerce').fillna(0)
-        df['amendment_value'] = pd.to_numeric(df['amendment_value'], errors='coerce').fillna(0)
+        for col in ['contract_value', 'original_value', 'amendment_value']:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         df['number_of_bids'] = pd.to_numeric(df['number_of_bids'], errors='coerce')
         return df
     except Exception as e:
-        st.error(f"❌ Could not load data file: {e}")
+        st.error(f"❌ Could not load data: {e}")
         return pd.DataFrame()
 
 
@@ -230,309 +242,238 @@ def calculate_kpis(df):
     if df.empty:
         return {k: 0 for k in ["total_spend", "contracts", "avg_val", "amendment_ratio",
                                 "avg_bids", "hhi", "top_3_share", "risk_score", "single_bid_rate"]}
-
     total_spend = df['contract_value'].sum()
-    total_contracts = len(df)
-    avg_val = df['contract_value'].mean() if total_contracts > 0 else 0
-    total_amendments = df['amendment_value'].sum()
-    amendment_ratio = (total_amendments / total_spend * 100) if total_spend > 0 else 0
+    n = len(df)
+    avg_val = df['contract_value'].mean() if n > 0 else 0
+    amendment_ratio = (df['amendment_value'].sum() / total_spend * 100) if total_spend > 0 else 0
+    bids = df['number_of_bids'].dropna()
+    avg_bids = bids.mean() if not bids.empty else 0
+    single_bid_rate = (len(df[df['number_of_bids'] == 1]) / n * 100) if n > 0 else 0
+    vpct = df.groupby('vendor_name')['contract_value'].sum() / total_spend * 100 if total_spend > 0 else 0
+    hhi = (vpct ** 2).sum()
+    top_3_share = vpct.sort_values(ascending=False).head(3).sum()
+    risk = 0
+    if avg_bids < 1.6: risk += 25
+    if single_bid_rate > 60: risk += 20
+    if amendment_ratio > 12: risk += 25
+    if hhi > 2000: risk += 30
+    return dict(total_spend=total_spend, contracts=n, avg_val=avg_val,
+                amendment_ratio=amendment_ratio, avg_bids=avg_bids, hhi=hhi,
+                top_3_share=top_3_share, risk_score=risk, single_bid_rate=single_bid_rate)
 
-    bids_data = df['number_of_bids'].dropna()
-    avg_bids = bids_data.mean() if not bids_data.empty else 0
-    single_bid_count = len(df[df['number_of_bids'] == 1])
-    single_bid_rate = (single_bid_count / total_contracts * 100) if total_contracts > 0 else 0
 
-    vendor_shares = df.groupby('vendor_name')['contract_value'].sum()
-    vendor_pct = (vendor_shares / total_spend * 100) if total_spend > 0 else vendor_shares * 0
-    hhi = (vendor_pct ** 2).sum()
-    top_3_share = vendor_pct.sort_values(ascending=False).head(3).sum()
+def section(label, title):
+    st.markdown(f"<div class='sec-label'>{label}</div><div class='sec-title'>{title}</div>",
+                unsafe_allow_html=True)
 
-    risk_score = 0
-    if avg_bids < 1.6:
-        risk_score += 25
-    if single_bid_rate > 60:
-        risk_score += 20
-    if amendment_ratio > 12:
-        risk_score += 25
-    if hhi > 2000:
-        risk_score += 30
 
-    return {
-        "total_spend": total_spend,
-        "contracts": total_contracts,
-        "avg_val": avg_val,
-        "amendment_ratio": amendment_ratio,
-        "avg_bids": avg_bids,
-        "hhi": hhi,
-        "top_3_share": top_3_share,
-        "risk_score": risk_score,
-        "single_bid_rate": single_bid_rate
-    }
+def chart_label(text):
+    st.markdown(f"<div class='chart-label'>{text}</div>", unsafe_allow_html=True)
 
 
 # --- MAIN ---
 def main():
-    apply_canada_styles()
+    apply_styles()
 
     df = load_and_prepare_data()
     if df.empty:
-        st.warning("No data available. Please ensure `contracts_2021_2026_cleaned.xlsx` is present.")
+        st.warning("No data available. Ensure `contracts_2021_2026_cleaned.xlsx` is in the repo.")
         return
 
-    # --- SIDEBAR ---
+    # ── SIDEBAR ──
     with st.sidebar:
-        st.image("https://www.canada.ca/etc/designs/canada/wet-boew/assets/sig-blk-en.svg", width=200)
-        st.markdown("---")
-        st.header("🔎 Filters")
+        st.image("https://www.canada.ca/etc/designs/canada/wet-boew/assets/sig-blk-en.svg", width=170)
+        st.markdown("<hr style='margin:10px 0; border-color:#eee;'>", unsafe_allow_html=True)
+        st.markdown("<span class='sidebar-filter-label'>Analysis Filters</span>", unsafe_allow_html=True)
 
         all_years = sorted(df['year'].dropna().unique().tolist())
-        selected_year = st.selectbox(
-            "Fiscal Year",
-            all_years,
-            index=len(all_years) - 1,
-            help="Filter data by the government fiscal year."
-        )
+        selected_year = st.selectbox("📅 Fiscal Year", all_years,
+                                     index=len(all_years) - 1,
+                                     help=TOOLTIPS['total_spend'])
 
         all_depts = sorted(df['owner_org_title'].dropna().unique().tolist())
-        selected_dept = st.multiselect(
-            "Department",
-            all_depts,
-            default=all_depts,
-            help="Select one or more government organizations to analyze."
-        )
-        st.markdown("---")
-        st.caption("Data Source: Government of Canada Open Data")
+        selected_dept = st.multiselect("🏛 Department", all_depts, default=all_depts,
+                                       help="Select departments to analyze.")
 
-    # --- FILTER DATA ---
+        st.markdown("<hr style='margin:10px 0; border-color:#eee;'>", unsafe_allow_html=True)
+        n_sel = len(selected_dept) if selected_dept else 0
+        st.caption(f"**{n_sel}** dept(s) · {selected_year}")
+        st.caption("Source: Government of Canada Open Data")
+
+    # ── FILTER ──
     year_df = df[df['year'] == selected_year]
     final_df = year_df[year_df['owner_org_title'].isin(selected_dept)] if selected_dept else year_df
 
     if final_df.empty:
-        st.warning("No data found for the selected filters. Try adjusting your selection.")
+        st.warning("No data for the selected filters. Try adjusting your selection.")
         return
 
-    # --- PREVIOUS YEAR KPIs ---
+    # ── PREV YEAR ──
     prev_kpis = None
     try:
-        parts = selected_year.split('-')
-        prev_year_str = f"{int(parts[0]) - 1}-{int(parts[1]) - 1}"
-        prev_df = df[df['year'] == prev_year_str]
+        p = selected_year.split('-')
+        prev_str = f"{int(p[0])-1}-{int(p[1])-1}"
+        prev_df = df[df['year'] == prev_str]
         if selected_dept:
             prev_df = prev_df[prev_df['owner_org_title'].isin(selected_dept)]
         if not prev_df.empty:
             prev_kpis = calculate_kpis(prev_df)
     except Exception:
-        prev_kpis = None
+        pass
 
-    current_kpis = calculate_kpis(final_df)
+    kpis = calculate_kpis(final_df)
 
-    # --- TABS ---
+    # ── TABS ──
     tab1, tab2, tab3 = st.tabs([
-        "📊 Executive Summary",
-        "🔍 Risk & Competition",
-        "🏢 Vendor Intelligence"
+        "📊  Executive Summary",
+        "🔍  Risk & Competition",
+        "🏢  Vendor Intelligence"
     ])
 
-    # ===== TAB 1: EXECUTIVE SUMMARY =====
+    # ════════════════════════════════════════
+    # TAB 1 — EXECUTIVE SUMMARY
+    # ════════════════════════════════════════
     with tab1:
-        st.markdown(f"### Fiscal Year {selected_year} — Performance Overview")
+        section(f"Fiscal Year {selected_year}", "Performance Overview")
 
         growth = 0.0
         if prev_kpis and prev_kpis['total_spend'] > 0:
-            growth = (current_kpis['total_spend'] - prev_kpis['total_spend']) / prev_kpis['total_spend'] * 100
+            growth = (kpis['total_spend'] - prev_kpis['total_spend']) / prev_kpis['total_spend'] * 100
 
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric(
-            "Total Spend",
-            f"${current_kpis['total_spend'] / 1e6:.1f}M",
-            delta=f"{growth:+.1f}% vs prior year",
-            help=TOOLTIPS['total_spend']
-        )
-        m2.metric(
-            "Total Contracts",
-            f"{current_kpis['contracts']:,}",
-            help=TOOLTIPS['contracts']
-        )
-        m3.metric(
-            "Average Contract Value",
-            f"${current_kpis['avg_val'] / 1e3:.1f}K",
-            help=TOOLTIPS['avg_val']
-        )
-
-        rs = current_kpis['risk_score']
-        integrity = 100 - rs
+        m1.metric("Total Spend", f"${kpis['total_spend']/1e6:.1f}M",
+                  delta=f"{growth:+.1f}% vs prior year", help=TOOLTIPS['total_spend'])
+        m2.metric("Total Contracts", f"{kpis['contracts']:,}", help=TOOLTIPS['contracts'])
+        m3.metric("Avg Contract Value", f"${kpis['avg_val']/1e3:.1f}K", help=TOOLTIPS['avg_val'])
+        rs = kpis['risk_score']
         risk_label = "🟢 LOW RISK" if rs < 40 else ("🟡 MEDIUM RISK" if rs < 70 else "🔴 HIGH RISK")
-        m4.metric(
-            "System Integrity Score",
-            f"{integrity}/100",
-            delta=risk_label,
-            help=TOOLTIPS['risk_score']
-        )
+        m4.metric("System Integrity", f"{100-rs}/100", delta=risk_label, help=TOOLTIPS['risk_score'])
 
-        st.markdown("---")
+        st.markdown("<br>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
 
         with c1:
-            st.markdown("**Spending by Procurement Category**")
-            cat_data = (
-                final_df.groupby('commodity_full')['contract_value']
-                .sum()
-                .reset_index()
-                .sort_values('contract_value', ascending=False)
-            )
-            fig_cat = px.bar(
-                cat_data,
-                x='commodity_full',
-                y='contract_value',
-                color_discrete_sequence=['#d30616'],
-                labels={'commodity_full': 'Category', 'contract_value': 'Total Spend ($)'}
-            )
-            fig_cat.update_layout(showlegend=False, **CHART_LAYOUT)
-            fig_cat.update_xaxes(**AXIS_STYLE)
-            fig_cat.update_yaxes(**AXIS_STYLE)
-            st.plotly_chart(fig_cat, use_container_width=True)
+            chart_label("Spending by Category")
+            cat = final_df.groupby('commodity_full')['contract_value'].sum().reset_index() \
+                          .sort_values('contract_value', ascending=False)
+            fig = px.bar(cat, x='commodity_full', y='contract_value',
+                         color_discrete_sequence=['#d30616'],
+                         labels={'commodity_full': '', 'contract_value': 'Spend ($)'})
+            fig.update_layout(**CHART_LAYOUT, showlegend=False, height=280)
+            fig.update_xaxes(**AXIS_STYLE)
+            fig.update_yaxes(**AXIS_STYLE)
+            st.plotly_chart(fig, use_container_width=True)
 
         with c2:
-            st.markdown("**Top Spending Departments**")
-            dept_data = (
-                final_df.groupby('owner_org_title')['contract_value']
-                .sum()
-                .sort_values(ascending=False)
-                .head(10)
-                .reset_index()
-            )
-            fig_dept = px.bar(
-                dept_data,
-                y='owner_org_title',
-                x='contract_value',
-                orientation='h',
-                color_discrete_sequence=['#26374a'],
-                labels={'owner_org_title': '', 'contract_value': 'Total Spend ($)'}
-            )
-            fig_dept.update_layout(**CHART_LAYOUT)
-            fig_dept.update_yaxes(categoryorder='total ascending', **AXIS_STYLE)
-            fig_dept.update_xaxes(**AXIS_STYLE)
-            st.plotly_chart(fig_dept, use_container_width=True)
+            chart_label("Top Spending Departments")
+            dept = final_df.groupby('owner_org_title')['contract_value'].sum() \
+                           .sort_values(ascending=False).head(10).reset_index()
+            fig2 = px.bar(dept, y='owner_org_title', x='contract_value', orientation='h',
+                          color_discrete_sequence=['#26374a'],
+                          labels={'owner_org_title': '', 'contract_value': 'Spend ($)'})
+            fig2.update_layout(**CHART_LAYOUT, height=280)
+            fig2.update_yaxes(categoryorder='total ascending', **AXIS_STYLE)
+            fig2.update_xaxes(**AXIS_STYLE)
+            st.plotly_chart(fig2, use_container_width=True)
 
-        # Yearly trend
-        st.markdown("**Annual Spending Trend**")
-        trend_df = df.groupby('year')['contract_value'].sum().reset_index().sort_values('year')
-        fig_trend = px.line(
-            trend_df,
-            x='year',
-            y='contract_value',
-            markers=True,
-            color_discrete_sequence=['#d30616'],
-            labels={'year': 'Fiscal Year', 'contract_value': 'Total Spend ($)'}
-        )
-        fig_trend.update_layout(**CHART_LAYOUT)
-        fig_trend.update_xaxes(**AXIS_STYLE)
-        fig_trend.update_yaxes(**AXIS_STYLE)
-        st.plotly_chart(fig_trend, use_container_width=True)
+        section("Year-on-Year", "Annual Spending Trend")
+        trend = df.groupby('year')['contract_value'].sum().reset_index().sort_values('year')
+        fig3 = px.line(trend, x='year', y='contract_value', markers=True,
+                       color_discrete_sequence=['#d30616'],
+                       labels={'year': 'Fiscal Year', 'contract_value': 'Total Spend ($)'})
+        fig3.update_traces(line=dict(width=3), marker=dict(size=8))
+        fig3.update_layout(**CHART_LAYOUT, height=280)
+        fig3.update_xaxes(**AXIS_STYLE)
+        fig3.update_yaxes(**AXIS_STYLE)
+        st.plotly_chart(fig3, use_container_width=True)
 
-    # ===== TAB 2: RISK & COMPETITION =====
+    # ════════════════════════════════════════
+    # TAB 2 — RISK & COMPETITION
+    # ════════════════════════════════════════
     with tab2:
-        st.markdown("### Competition & Fiscal Risk Analysis")
+        section("Risk Analysis", "Competition & Fiscal Health Indicators")
 
         r1, r2, r3 = st.columns(3)
-        r1.metric("Average Bids per Contract", f"{current_kpis['avg_bids']:.2f}", help=TOOLTIPS['avg_bids'])
-        r2.metric("Single-Bid Rate", f"{current_kpis['single_bid_rate']:.1f}%", help=TOOLTIPS['single_bid'])
-        r3.metric("Amendment-to-Spend Ratio", f"{current_kpis['amendment_ratio']:.1f}%", help=TOOLTIPS['amend_ratio'])
+        r1.metric("Avg Bids / Contract", f"{kpis['avg_bids']:.2f}", help=TOOLTIPS['avg_bids'])
+        r2.metric("Single-Bid Rate", f"{kpis['single_bid_rate']:.1f}%", help=TOOLTIPS['single_bid'])
+        r3.metric("Amendment Ratio", f"{kpis['amendment_ratio']:.1f}%", help=TOOLTIPS['amend_ratio'])
 
-        st.info(
-            "💡 **Stakeholder Insight:** A high Single-Bid Rate (above 60%) combined with a high Amendment Ratio "
-            "indicates a serious risk of vendor lock-in, poor market competition, and budget overruns."
-        )
+        st.info("💡 **Insight:** A high single-bid rate (>60%) combined with high amendment ratios "
+                "signals vendor lock-in risk, low competition, and potential budget overruns.")
 
-        # Bids distribution
-        st.markdown("**Distribution of Bids per Contract**")
+        section("Bid Distribution", "Competing Bids per Contract")
         bids_filtered = final_df['number_of_bids'].dropna()
         if not bids_filtered.empty:
-            fig_bids = px.histogram(
-                bids_filtered,
-                nbins=20,
-                color_discrete_sequence=['#d30616'],
-                labels={'value': 'Number of Bids', 'count': 'Number of Contracts'}
-            )
-            fig_bids.update_layout(**CHART_LAYOUT)
-            fig_bids.update_xaxes(**AXIS_STYLE)
-            fig_bids.update_yaxes(**AXIS_STYLE)
-            st.plotly_chart(fig_bids, use_container_width=True)
+            fig4 = px.histogram(bids_filtered, nbins=15,
+                                color_discrete_sequence=['#d30616'],
+                                labels={'value': 'Number of Bids', 'count': 'Contracts'})
+            fig4.update_layout(**CHART_LAYOUT, height=280)
+            fig4.update_xaxes(**AXIS_STYLE)
+            fig4.update_yaxes(**AXIS_STYLE)
+            st.plotly_chart(fig4, use_container_width=True)
 
-        st.markdown("**High-Amendment Contracts — Flagged for Audit**")
-        st.caption("Contracts where the amendment value exceeds 50% of the original value.")
+        section("Audit Flags", "High-Amendment Contracts — Flagged for Review")
+        st.caption("Contracts where amendment value > 50% of original contract value.")
         mask = (final_df['original_value'] > 0) & \
                (final_df['amendment_value'] > final_df['original_value'] * 0.5)
         high_risk = final_df[mask].copy()
 
         if not high_risk.empty:
-            cols = [c for c in ['reference_number', 'vendor_name', 'original_value', 'amendment_value', 'commodity_full'] if c in high_risk.columns]
-            display_df = high_risk[cols].rename(columns=COLUMN_MAP).head(20)
-            st.dataframe(display_df, hide_index=True, use_container_width=True, height=400)
+            cols = [c for c in ['reference_number', 'vendor_name', 'original_value',
+                                 'amendment_value', 'commodity_full'] if c in high_risk.columns]
+            st.dataframe(high_risk[cols].rename(columns=COLUMN_MAP).head(20),
+                         hide_index=True, use_container_width=True, height=380)
         else:
-            st.info("ℹ️ No contracts flagged: no amendment value exceeded 50% of original value for this filter.")
+            st.success("✅ No contracts flagged under current filters.")
 
-    # ===== TAB 3: VENDOR INTELLIGENCE =====
+    # ════════════════════════════════════════
+    # TAB 3 — VENDOR INTELLIGENCE
+    # ════════════════════════════════════════
     with tab3:
-        st.markdown("### Market Dynamics & Vendor Concentration")
+        section("Market Dynamics", "Vendor Concentration & Market Analysis")
 
         v1, v2 = st.columns(2)
-        v1.metric("Top 3 Vendor Market Share", f"{current_kpis['top_3_share']:.1f}%", help=TOOLTIPS['top3'])
-        v2.metric("Market Concentration (HHI)", f"{current_kpis['hhi']:.0f}", help=TOOLTIPS['hhi'])
+        v1.metric("Top 3 Vendor Share", f"{kpis['top_3_share']:.1f}%", help=TOOLTIPS['top3'])
+        v2.metric("Market HHI", f"{kpis['hhi']:.0f}", help=TOOLTIPS['hhi'])
 
-        hhi_val = current_kpis['hhi']
-        if hhi_val < 1500:
-            st.success(f"✅ HHI = {hhi_val:.0f} — Competitive market (< 1,500). Low concentration risk.")
-        elif hhi_val < 2500:
-            st.warning(f"⚠️ HHI = {hhi_val:.0f} — Moderately concentrated market (1,500–2,500).")
+        hhi = kpis['hhi']
+        if hhi < 1500:
+            st.success(f"✅ HHI = {hhi:.0f} — Competitive market. Low concentration risk.")
+        elif hhi < 2500:
+            st.warning(f"⚠️ HHI = {hhi:.0f} — Moderately concentrated market.")
         else:
-            st.error(f"🚨 HHI = {hhi_val:.0f} — Highly concentrated market (> 2,500). Monopoly risk.")
+            st.error(f"🚨 HHI = {hhi:.0f} — Highly concentrated. Monopoly/oligopoly risk.")
 
-        # Top vendors chart
-        top_vendors_agg = (
-            final_df.groupby('vendor_name')['contract_value']
-            .sum()
-            .sort_values(ascending=False)
-            .head(15)
-            .reset_index()
-        )
-        fig_vendors = px.bar(
-            top_vendors_agg,
-            y='vendor_name',
-            x='contract_value',
-            orientation='h',
-            color_discrete_sequence=['#d30616'],
-            labels={'vendor_name': 'Vendor', 'contract_value': 'Total Spend ($)'}
-        )
-        fig_vendors.update_layout(**CHART_LAYOUT)
-        fig_vendors.update_yaxes(categoryorder='total ascending', **AXIS_STYLE)
-        fig_vendors.update_xaxes(**AXIS_STYLE)
-        st.plotly_chart(fig_vendors, use_container_width=True)
+        chart_label("Top 15 Vendors by Spend")
+        top_v = final_df.groupby('vendor_name')['contract_value'].sum() \
+                        .sort_values(ascending=False).head(15).reset_index()
+        fig5 = px.bar(top_v, y='vendor_name', x='contract_value', orientation='h',
+                      color_discrete_sequence=['#d30616'],
+                      labels={'vendor_name': '', 'contract_value': 'Total Spend ($)'})
+        fig5.update_layout(**CHART_LAYOUT, height=420)
+        fig5.update_yaxes(categoryorder='total ascending', **AXIS_STYLE)
+        fig5.update_xaxes(**AXIS_STYLE)
+        st.plotly_chart(fig5, use_container_width=True)
 
-        st.markdown("**Top Vendors by Fiscal Volume**")
-        top_vendors_table = (
-            final_df.groupby('vendor_name')['contract_value']
-            .agg(['sum', 'count'])
-            .sort_values('sum', ascending=False)
-            .head(20)
-            .reset_index()
-        )
-        top_vendors_table.columns = ['Vendor Name', 'Total Spend ($)', 'Contract Count']
-        top_vendors_table['Market Share (%)'] = (
-            top_vendors_table['Total Spend ($)'] / current_kpis['total_spend'] * 100
-        ).round(2)
-        st.markdown("**Top Vendors by Fiscal Volume**")
+        section("Top Vendors", "Leading Vendors by Fiscal Volume")
+        tbl = final_df.groupby('vendor_name')['contract_value'].agg(['sum', 'count']) \
+                      .sort_values('sum', ascending=False).head(20).reset_index()
+        tbl.columns = ['Vendor Name', 'Total Spend ($)', 'Contracts']
+        tbl['Market Share (%)'] = (tbl['Total Spend ($)'] / kpis['total_spend'] * 100).round(2)
         st.dataframe(
-            top_vendors_table,
-            hide_index=True,
-            use_container_width=True,
-            height=500,
+            tbl, hide_index=True, use_container_width=True, height=480,
             column_config={
-                'Total Spend ($)': st.column_config.NumberColumn('Total Spend ($)', format='$%,.0f'),
-                'Market Share (%)': st.column_config.NumberColumn('Market Share (%)', format='%.2f%%'),
-                'Contract Count': st.column_config.NumberColumn('Contracts'),
+                'Total Spend ($)': st.column_config.NumberColumn(format='$%,.0f'),
+                'Market Share (%)': st.column_config.NumberColumn(format='%.2f%%'),
             }
         )
+
+        st.markdown("""
+            <div class="gov-footer">
+                <span>&#127464;&#127462; Government of Canada &nbsp;&middot;&nbsp; Procurement Intelligence Portal</span>
+                <span>Data: Public Services &amp; Procurement Canada &nbsp;&middot;&nbsp; Open Government Licence</span>
+            </div>
+        """, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
