@@ -82,20 +82,33 @@ def apply_styles():
             padding-bottom: 0.5rem;
         }
         
-        /* Button Styling */
-        .stButton>button {
+        /* Button Styling - Comprehensive */
+        .stButton>button, .stDownloadButton>button, [data-testid="stDownloadButton"] > button {
             background-color: #ffffff !important;
             color: #111827 !important;
             border: 1px solid #E5E7EB !important;
             border-radius: 8px !important;
+            padding: 0.5rem 1rem !important;
             font-weight: 600 !important;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+            transition: all 0.2s ease !important;
         }
-        .stButton>button:hover {
+        .stButton>button:hover, .stDownloadButton>button:hover {
             border-color: #d30616 !important;
             color: #d30616 !important;
+            background-color: #FFF1F2 !important;
         }
         
+        /* Sidebar Info Labels */
+        .info-label {
+            font-size: 0.85rem;
+            color: #6B7280;
+            margin-bottom: -15px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
         /* Hide default Streamlit elements */
         [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stHeader"], footer {
             visibility: hidden !important;
@@ -227,6 +240,63 @@ HELP_TEXTS = {
     'number_of_bids': "Total number of competitive bids received for this contract."
 }
 
+from fpdf import FPDF
+import io
+
+# --- PDF GENERATOR ---
+def generate_pdf_report(f_df, year):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Header
+    pdf.set_font("Helvetica", 'B', 16)
+    pdf.set_text_color(211, 6, 22) # Canada Red
+    pdf.cell(190, 10, "GOVERNMENT OF CANADA", ln=True, align='L')
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.set_text_color(17, 24, 39) # Dark Gray
+    pdf.cell(190, 10, "Procurement Intelligence Report", ln=True, align='L')
+    pdf.line(10, 32, 200, 32)
+    pdf.ln(10)
+    
+    # Metadata
+    pdf.set_font("Helvetica", '', 10)
+    pdf.set_text_color(107, 114, 128)
+    pdf.cell(95, 7, f"Fiscal Year: {year}", ln=False)
+    pdf.cell(95, 7, f"Generated: {pd.Timestamp.now().strftime('%Y-%m-%d')}", ln=True, align='R')
+    pdf.ln(5)
+    
+    # Metrics
+    total_spend = f_df['contract_value'].sum()
+    total_contracts = len(f_df)
+    avg_val = f_df['contract_value'].mean()
+    
+    pdf.set_fill_color(249, 250, 251)
+    pdf.set_font("Helvetica", 'B', 12)
+    pdf.cell(190, 10, " 1. Executive Summary", ln=True, fill=True)
+    pdf.ln(2)
+    pdf.set_font("Helvetica", '', 11)
+    pdf.set_text_color(17, 24, 39)
+    summary = f"In the fiscal year {year}, total procurement obligations amounted to ${total_spend:,.2f} across {total_contracts:,} contracts. The average transaction value was ${avg_val:,.2f}."
+    pdf.multi_cell(190, 7, summary)
+    pdf.ln(5)
+    
+    # Vendor Table Header
+    pdf.set_font("Helvetica", 'B', 12)
+    pdf.cell(190, 10, " 2. Top Vendor Analysis", ln=True, fill=True)
+    pdf.ln(2)
+    pdf.set_font("Helvetica", 'B', 10)
+    pdf.cell(120, 10, "Vendor Name", border=1)
+    pdf.cell(70, 10, "Total Spend ($)", border=1, ln=True)
+    
+    # Vendor Table Data
+    pdf.set_font("Helvetica", '', 10)
+    top_v = f_df.groupby('vendor_name')['contract_value'].sum().sort_values(ascending=False).head(10)
+    for name, val in top_v.items():
+        pdf.cell(120, 8, str(name)[:50], border=1)
+        pdf.cell(70, 8, f"{val:,.2f}", border=1, ln=True)
+    
+    return pdf.output()
+
 def main():
     apply_styles()
     df = load_data()
@@ -242,32 +312,34 @@ def main():
 
     with st.sidebar:
         st.markdown("## 🏛️ Controls")
+        
+        st.markdown(f'<p class="info-label">ℹ️ {HELP_TEXTS["year"]}</p>', unsafe_allow_html=True)
         year = st.selectbox(
             "Select Fiscal Year", 
             sorted(df['year'].dropna().unique()), 
-            index=0,
-            help=HELP_TEXTS['year']
+            index=0
         )
+        
+        st.markdown(f'<p class="info-label">ℹ️ {HELP_TEXTS["depts"]}</p>', unsafe_allow_html=True)
         depts = st.multiselect(
             "Filter Departments", 
             sorted(df['owner_org_title'].unique()), 
-            default=df['owner_org_title'].unique()[:5],
-            help=HELP_TEXTS['depts']
+            default=df['owner_org_title'].unique()[:5]
         )
     
     f_df = df[(df['year'] == year) & (df['owner_org_title'].isin(depts))]
     
-    # Store Report in Session
-    st.session_state["report"] = generate_report_text(f_df, year)
+    # Generate PDF
+    pdf_bytes = generate_pdf_report(f_df, year)
 
     with h_col2:
         st.download_button(
-            label="📥 Download Report",
-            data=st.session_state["report"],
-            file_name=f"official_report_{year.replace('-', '_')}.txt",
-            mime="text/plain",
+            label="📥 Download PDF Report",
+            data=pdf_bytes,
+            file_name=f"procurement_report_{year.replace('-', '_')}.pdf",
+            mime="application/pdf",
             use_container_width=True,
-            help="Export the current analysis as a formal government report."
+            help="Export the current analysis as a professional light-themed PDF report."
         )
 
     t1, t2, t3 = st.tabs(["📊 Summary", "🔍 Risk Analysis", "🏢 Vendor Intel"])
