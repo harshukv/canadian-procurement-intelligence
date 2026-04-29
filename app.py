@@ -38,12 +38,12 @@ TOOLTIPS = {
 CHART_LAYOUT = dict(
     paper_bgcolor='#ffffff',
     plot_bgcolor='#ffffff',
-    font=dict(family='Noto Sans, sans-serif', color='#26374a', size=12),
+    font=dict(family='Noto Sans, sans-serif', color='#26374a', size=13),
     margin=dict(t=10, b=30, l=10, r=10),
 )
 AXIS_STYLE = dict(
     showgrid=True, gridcolor='#f0f0f0',
-    linecolor='#e0e0e0', tickfont=dict(color='#555', size=11)
+    linecolor='#e0e0e0', tickfont=dict(color='#555', size=12)
 )
 
 # --- STYLES ---
@@ -118,29 +118,30 @@ def apply_styles():
             box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
         }
         [data-testid="stMetricLabel"] p {
-            color: #607080 !important; font-size: 0.75rem !important;
+            color: #607080 !important; font-size: 0.82rem !important;
             font-weight: 700 !important; text-transform: uppercase;
             letter-spacing: 0.6px;
         }
         [data-testid="stMetricValue"] {
-            color: #1a2a3a !important; font-weight: 800 !important; font-size: 1.8rem !important;
+            color: #1a2a3a !important; font-weight: 800 !important; font-size: 2rem !important;
         }
+        [data-testid="stMetricDelta"] { font-size: 0.85rem !important; }
         [data-testid="stMetricDelta"] svg { display: none; }
 
         /* ── SECTION LABELS ── */
         .sec-label {
-            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 1.4px; color: #d30616; margin-bottom: 2px;
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.4px; color: #d30616; margin-bottom: 4px;
         }
         .sec-title {
-            font-size: 1.05rem; font-weight: 700; color: #26374a;
-            margin-bottom: 14px; padding-bottom: 10px;
+            font-size: 1.25rem; font-weight: 700; color: #26374a;
+            margin-bottom: 16px; padding-bottom: 10px;
             border-bottom: 1px solid #e8ecf0;
         }
         .chart-label {
-            font-size: 0.82rem; font-weight: 700; color: #445566;
+            font-size: 0.88rem; font-weight: 700; color: #445566;
             text-transform: uppercase; letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         /* ── TABS ── */
@@ -152,8 +153,8 @@ def apply_styles():
         [data-baseweb="tab"] {
             background-color: #ffffff !important;
             color: #607080 !important;
-            font-weight: 600 !important; font-size: 0.9rem !important;
-            padding: 12px 20px !important;
+            font-weight: 700 !important; font-size: 1rem !important;
+            padding: 14px 24px !important;
             border-bottom: 3px solid transparent !important;
         }
         [aria-selected="true"][data-baseweb="tab"] {
@@ -164,6 +165,12 @@ def apply_styles():
             background-color: #f0f2f5 !important;
             padding-top: 20px !important;
         }
+
+        /* ── BODY TEXT & CAPTIONS ── */
+        p, li, .stCaption, .stMarkdown p { font-size: 0.95rem !important; }
+        small, .stCaption { font-size: 0.82rem !important; color: #667788 !important; }
+        label { font-size: 0.9rem !important; font-weight: 600 !important; }
+        h3 { font-size: 1.3rem !important; }
 
         /* ── PLOTLY ── */
         iframe, .js-plotly-plot, .plotly-graph-div {
@@ -421,8 +428,11 @@ def main():
         if not high_risk.empty:
             cols = [c for c in ['reference_number', 'vendor_name', 'original_value',
                                  'amendment_value', 'commodity_full'] if c in high_risk.columns]
-            st.dataframe(high_risk[cols].rename(columns=COLUMN_MAP).head(20),
-                         hide_index=True, use_container_width=True, height=380)
+            disp = high_risk[cols].rename(columns=COLUMN_MAP).head(20).copy()
+            for col in ['Original Value ($)', 'Amendment Value ($)']:
+                if col in disp.columns:
+                    disp[col] = disp[col].apply(lambda x: f'${x:,.0f}')
+            st.dataframe(disp, hide_index=True, use_container_width=True, height=380)
         else:
             st.success("✅ No contracts flagged under current filters.")
 
@@ -458,15 +468,11 @@ def main():
         section("Top Vendors", "Leading Vendors by Fiscal Volume")
         tbl = final_df.groupby('vendor_name')['contract_value'].agg(['sum', 'count']) \
                       .sort_values('sum', ascending=False).head(20).reset_index()
-        tbl.columns = ['Vendor Name', 'Total Spend ($)', 'Contracts']
-        tbl['Market Share (%)'] = (tbl['Total Spend ($)'] / kpis['total_spend'] * 100).round(2)
-        st.dataframe(
-            tbl, hide_index=True, use_container_width=True, height=480,
-            column_config={
-                'Total Spend ($)': st.column_config.NumberColumn(format='$%,.0f'),
-                'Market Share (%)': st.column_config.NumberColumn(format='%.2f%%'),
-            }
-        )
+        tbl.columns = ['Vendor Name', 'Total Spend', 'Contracts']
+        tbl['Market Share (%)'] = (tbl['Total Spend'] / kpis['total_spend'] * 100).round(2)
+        tbl['Total Spend'] = tbl['Total Spend'].apply(lambda x: f'${x:,.0f}')
+        tbl['Market Share (%)'] = tbl['Market Share (%)'].apply(lambda x: f'{x:.2f}%')
+        st.dataframe(tbl, hide_index=True, use_container_width=True, height=480)
 
         st.markdown("""
             <div class="gov-footer">
