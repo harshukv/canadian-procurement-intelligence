@@ -87,11 +87,16 @@ def apply_canada_styles():
             color: #26374a !important;
             border-color: #cccccc !important;
         }
-        /* Tag chips inside multiselect */
+        /* Tag chips inside multiselect - WHITE with border */
         [data-baseweb="tag"] {
-            background-color: #d30616 !important;
-            color: #ffffff !important;
+            background-color: #f0f4f8 !important;
+            color: #26374a !important;
+            border: 1px solid #b0bec5 !important;
+            border-radius: 4px !important;
         }
+        [data-baseweb="tag"] span { color: #26374a !important; }
+        [data-baseweb="tag"] [data-testid="stIcon"],
+        [data-baseweb="tag"] svg { fill: #26374a !important; color: #26374a !important; }
         /* Dropdown option list */
         ul[role="listbox"], li[role="option"] {
             background-color: #ffffff !important;
@@ -153,47 +158,51 @@ def apply_canada_styles():
 
         hr { border-color: #eeeeee !important; }
 
-        /* ── HEADER ── */
-        .header-banner {
-            background-color: #26374a;
-            padding: 1.2rem 2rem;
-            margin-bottom: 1.5rem;
+        /* ── HEADER: Official Canada.ca style ── */
+        .gov-header {
+            background-color: #ffffff;
+            border-bottom: 3px solid #d30616;
+            padding: 0.75rem 2rem;
             display: flex;
             align-items: center;
-            gap: 1.2rem;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            justify-content: space-between;
+            margin-bottom: 0;
         }
-        .header-title {
-            color: #ffffff;
-            font-size: 1.55rem;
-            font-weight: 800;
-            letter-spacing: -0.3px;
-            line-height: 1.3;
+        .gov-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
         }
-        .header-title span.red-bar {
+        .gov-header-divider {
+            width: 1px;
+            height: 36px;
+            background-color: #d30616;
             display: inline-block;
-            width: 4px;
-            height: 1.4em;
-            background: #d30616;
-            margin-right: 10px;
-            vertical-align: middle;
-            border-radius: 2px;
         }
-        .header-subtitle {
-            color: #bdc8d4;
-            font-size: 0.82rem;
-            margin-top: 4px;
+        .gov-portal-title {
+            color: #26374a;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.2px;
+            line-height: 1.2;
+        }
+        .gov-portal-subtitle {
+            color: #666666;
+            font-size: 0.78rem;
+            margin-top: 2px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
         }
         </style>
 
-        <div class="header-banner">
-            <span style="font-size:3rem; line-height:1;">&#127464;&#127462;</span>
-            <div>
-                <div class="header-title">
-                    <span class="red-bar"></span>CA Procurement Intelligence Portal
-                </div>
-                <div class="header-subtitle">
-                    Government of Canada &nbsp;&middot;&nbsp; Public Spending Transparency &amp; Analytics
+        <div class="gov-header">
+            <div class="gov-header-left">
+                <img src="https://www.canada.ca/etc/designs/canada/wet-boew/assets/sig-blk-en.svg"
+                     alt="Government of Canada" style="height:38px; width:auto;" />
+                <div class="gov-header-divider"></div>
+                <div>
+                    <div class="gov-portal-title">CA Procurement Intelligence Portal</div>
+                    <div class="gov-portal-subtitle">Public Spending Transparency &amp; Analytics</div>
                 </div>
             </div>
         </div>
