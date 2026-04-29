@@ -295,7 +295,7 @@ def generate_pdf_report(f_df, year):
         pdf.cell(120, 8, str(name)[:50], border=1)
         pdf.cell(70, 8, f"{val:,.2f}", border=1, ln=True)
     
-    return pdf.output()
+    return bytes(pdf.output())
 
 def main():
     apply_styles()
