@@ -43,62 +43,117 @@ def apply_canada_styles():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
 
+        /* ── Force light mode everywhere ── */
+        html, body,
+        [data-testid="stApp"],
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"],
+        .main, .block-container,
+        section[data-testid="stSidebar"],
+        section[data-testid="stSidebar"] > div,
+        [class*="css"] {
+            background-color: #f5f5f5 !important;
+            color: #26374a !important;
+            font-family: 'Noto Sans', sans-serif !important;
+        }
+
+        /* Sidebar specific */
+        section[data-testid="stSidebar"] {
+            background-color: #ffffff !important;
+            border-right: 2px solid #e0e0e0 !important;
+        }
+
         /* Hide Streamlit chrome */
         [data-testid="stToolbar"],
         [data-testid="stDecoration"],
         [data-testid="stHeader"],
-        footer { visibility: hidden; display: none; }
+        footer { visibility: hidden !important; display: none !important; }
 
-        html, body, [class*="css"] {
-            font-family: 'Noto Sans', sans-serif;
+        /* Metric cards */
+        [data-testid="stMetric"] {
+            background-color: #ffffff !important;
+            border-left: 5px solid #d30616 !important;
+            border-radius: 6px !important;
+            padding: 18px !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.07) !important;
+        }
+        [data-testid="stMetricLabel"] { color: #555555 !important; font-size: 0.85rem !important; }
+        [data-testid="stMetricValue"] { color: #26374a !important; font-weight: 700 !important; }
+        [data-testid="stMetricDelta"] { font-size: 0.8rem !important; }
+
+        /* Tab bar */
+        [data-baseweb="tab-list"] {
+            background-color: #ffffff !important;
+            border-bottom: 2px solid #d30616 !important;
+            border-radius: 0 !important;
+        }
+        [data-baseweb="tab"] {
+            color: #26374a !important;
+            font-weight: 600 !important;
+            font-size: 0.95rem !important;
+            background-color: #ffffff !important;
+        }
+        [aria-selected="true"][data-baseweb="tab"] {
+            color: #d30616 !important;
+            border-bottom: 3px solid #d30616 !important;
         }
 
+        /* DataFrames */
+        [data-testid="stDataFrame"],
+        .stDataFrame { background-color: #ffffff !important; }
+        thead tr th {
+            background-color: #26374a !important;
+            color: #ffffff !important;
+        }
+
+        /* Inputs & selects */
+        [data-testid="stSelectbox"] > div,
+        [data-testid="stMultiSelect"] > div {
+            background-color: #ffffff !important;
+            border: 1px solid #cccccc !important;
+            color: #26374a !important;
+        }
+
+        /* Info/warning/success boxes */
+        [data-testid="stAlert"] {
+            background-color: #eaf4fb !important;
+            color: #1a3d5c !important;
+            border-left: 4px solid #1f7ac3 !important;
+        }
+
+        /* Header banner */
         .header-banner {
-            background-color: #f5f5f5;
+            background-color: #ffffff;
             padding: 1.2rem 2rem;
             border-bottom: 4px solid #d30616;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
             gap: 1rem;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
         }
         .header-title {
             color: #26374a;
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 700;
+            line-height: 1.4;
         }
         .header-subtitle {
-            color: #555;
-            font-size: 0.85rem;
-        }
-
-        .stMetric {
-            background-color: #ffffff;
-            padding: 18px;
-            border-left: 5px solid #d30616;
-            border-radius: 4px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        }
-
-        .risk-high { color: #d30616; font-weight: 600; }
-        .risk-med  { color: #e37c22; font-weight: 600; }
-        .risk-low  { color: #278400; font-weight: 600; }
-
-        .stTabs [data-baseweb="tab"] {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #26374a;
+            color: #666666;
+            font-size: 0.82rem;
+            margin-top: 2px;
         }
         </style>
 
         <div class="header-banner">
-            <span style="font-size:2.2rem;">🇨🇦</span>
+            <span style="font-size:2.5rem; line-height:1;">🇨🇦</span>
             <div>
                 <div class="header-title">
                     Procurement Intelligence Portal &nbsp;|&nbsp; Portail d'intelligence en approvisionnement
                 </div>
                 <div class="header-subtitle">
-                    Government of Canada &nbsp;·&nbsp; Public Spending Transparency Dashboard
+                    Government of Canada &nbsp;·&nbsp; Public Spending Transparency &amp; Analytics Dashboard
                 </div>
             </div>
         </div>
