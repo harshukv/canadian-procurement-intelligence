@@ -37,123 +37,139 @@ TOOLTIPS = {
     "top3": "The share of the total budget controlled by the top three largest vendors. High concentration reduces competitive pressure."
 }
 
+# --- CHART DEFAULTS ---
+CHART_LAYOUT = dict(
+    paper_bgcolor='#ffffff',
+    plot_bgcolor='#ffffff',
+    font=dict(family='Noto Sans, sans-serif', color='#26374a'),
+    margin=dict(t=20, b=20, l=10, r=10),
+    xaxis=dict(showgrid=True, gridcolor='#eeeeee', linecolor='#cccccc', tickfont=dict(color='#26374a')),
+    yaxis=dict(showgrid=True, gridcolor='#eeeeee', linecolor='#cccccc', tickfont=dict(color='#26374a')),
+)
+
 # --- STYLES ---
 def apply_canada_styles():
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
 
-        /* ── Force light mode everywhere ── */
-        html, body,
+        /* ── GLOBAL: pure white everywhere ── */
+        html, body { background-color: #ffffff !important; color: #26374a !important; }
+
         [data-testid="stApp"],
         [data-testid="stAppViewContainer"],
+        [data-testid="stVerticalBlock"],
         [data-testid="stMain"],
+        [data-testid="stMainBlockContainer"],
         .main, .block-container,
-        section[data-testid="stSidebar"],
-        section[data-testid="stSidebar"] > div,
-        [class*="css"] {
-            background-color: #f5f5f5 !important;
+        div[class*="appview"],
+        div[class*="main"] {
+            background-color: #ffffff !important;
             color: #26374a !important;
             font-family: 'Noto Sans', sans-serif !important;
         }
 
-        /* Sidebar specific */
-        section[data-testid="stSidebar"] {
-            background-color: #ffffff !important;
-            border-right: 2px solid #e0e0e0 !important;
+        /* Sidebar */
+        section[data-testid="stSidebar"],
+        section[data-testid="stSidebar"] > div {
+            background-color: #fafafa !important;
+            border-right: 1px solid #e5e5e5 !important;
         }
 
         /* Hide Streamlit chrome */
-        [data-testid="stToolbar"],
-        [data-testid="stDecoration"],
-        [data-testid="stHeader"],
-        footer { visibility: hidden !important; display: none !important; }
+        [data-testid="stToolbar"], [data-testid="stDecoration"],
+        [data-testid="stHeader"], footer {
+            visibility: hidden !important; display: none !important;
+        }
 
         /* Metric cards */
         [data-testid="stMetric"] {
             background-color: #ffffff !important;
+            border: 1px solid #e8e8e8 !important;
             border-left: 5px solid #d30616 !important;
             border-radius: 6px !important;
-            padding: 18px !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.07) !important;
+            padding: 18px 20px !important;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
         }
-        [data-testid="stMetricLabel"] { color: #555555 !important; font-size: 0.85rem !important; }
-        [data-testid="stMetricValue"] { color: #26374a !important; font-weight: 700 !important; }
-        [data-testid="stMetricDelta"] { font-size: 0.8rem !important; }
+        [data-testid="stMetricLabel"] p { color: #666666 !important; font-size: 0.82rem !important; }
+        [data-testid="stMetricValue"]  { color: #26374a !important; font-weight: 700 !important; }
 
-        /* Tab bar */
+        /* Tabs */
         [data-baseweb="tab-list"] {
             background-color: #ffffff !important;
             border-bottom: 2px solid #d30616 !important;
-            border-radius: 0 !important;
         }
         [data-baseweb="tab"] {
+            background-color: #ffffff !important;
             color: #26374a !important;
             font-weight: 600 !important;
-            font-size: 0.95rem !important;
-            background-color: #ffffff !important;
         }
         [aria-selected="true"][data-baseweb="tab"] {
             color: #d30616 !important;
             border-bottom: 3px solid #d30616 !important;
         }
-
-        /* DataFrames */
-        [data-testid="stDataFrame"],
-        .stDataFrame { background-color: #ffffff !important; }
-        thead tr th {
-            background-color: #26374a !important;
-            color: #ffffff !important;
+        [data-testid="stTabsContent"] {
+            background-color: #ffffff !important;
         }
 
-        /* Inputs & selects */
-        [data-testid="stSelectbox"] > div,
-        [data-testid="stMultiSelect"] > div {
+        /* Plotly iframe wrapper */
+        iframe, .js-plotly-plot, .plotly, .plotly-graph-div {
             background-color: #ffffff !important;
-            border: 1px solid #cccccc !important;
+        }
+
+        /* DataFrames */
+        [data-testid="stDataFrame"] { background-color: #ffffff !important; }
+        .dvn-scroller { background-color: #ffffff !important; }
+
+        /* Inputs */
+        [data-testid="stSelectbox"] > div > div,
+        [data-testid="stMultiSelect"] > div > div {
+            background-color: #ffffff !important;
             color: #26374a !important;
         }
 
-        /* Info/warning/success boxes */
+        /* Info/success/warning boxes */
         [data-testid="stAlert"] {
-            background-color: #eaf4fb !important;
-            color: #1a3d5c !important;
+            background-color: #f0f7ff !important;
             border-left: 4px solid #1f7ac3 !important;
+            color: #1a3d5c !important;
         }
+
+        /* Divider */
+        hr { border-color: #eeeeee !important; }
 
         /* Header banner */
         .header-banner {
             background-color: #ffffff;
-            padding: 1.2rem 2rem;
+            padding: 1rem 2rem;
             border-bottom: 4px solid #d30616;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
             gap: 1rem;
-            border-radius: 0 0 4px 4px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         .header-title {
             color: #26374a;
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: 700;
             line-height: 1.4;
         }
         .header-subtitle {
-            color: #666666;
-            font-size: 0.82rem;
-            margin-top: 2px;
+            color: #777777;
+            font-size: 0.8rem;
+            margin-top: 3px;
         }
         </style>
 
         <div class="header-banner">
-            <span style="font-size:2.5rem; line-height:1;">🇨🇦</span>
+            <span style="font-size:2.5rem; line-height:1;">&#127464;&#127462;</span>
             <div>
                 <div class="header-title">
                     Procurement Intelligence Portal &nbsp;|&nbsp; Portail d'intelligence en approvisionnement
                 </div>
                 <div class="header-subtitle">
-                    Government of Canada &nbsp;·&nbsp; Public Spending Transparency &amp; Analytics Dashboard
+                    Government of Canada &nbsp;&middot;&nbsp; Public Spending Transparency &amp; Analytics
                 </div>
             </div>
         </div>
@@ -338,7 +354,7 @@ def main():
                 color_discrete_sequence=['#d30616'],
                 labels={'commodity_full': 'Category', 'contract_value': 'Total Spend ($)'}
             )
-            fig_cat.update_layout(showlegend=False, margin=dict(t=10, b=10), plot_bgcolor='white')
+            fig_cat.update_layout(showlegend=False, **CHART_LAYOUT)
             st.plotly_chart(fig_cat, use_container_width=True)
 
         with c2:
@@ -358,7 +374,7 @@ def main():
                 color_discrete_sequence=['#26374a'],
                 labels={'owner_org_title': '', 'contract_value': 'Total Spend ($)'}
             )
-            fig_dept.update_layout(yaxis={'categoryorder': 'total ascending'}, margin=dict(t=10, b=10), plot_bgcolor='white')
+            fig_dept.update_layout(yaxis={'categoryorder': 'total ascending'}, **CHART_LAYOUT)
             st.plotly_chart(fig_dept, use_container_width=True)
 
         # Yearly trend
@@ -372,7 +388,7 @@ def main():
             color_discrete_sequence=['#d30616'],
             labels={'year': 'Fiscal Year', 'contract_value': 'Total Spend ($)'}
         )
-        fig_trend.update_layout(plot_bgcolor='white', margin=dict(t=10, b=10))
+        fig_trend.update_layout(**CHART_LAYOUT)
         st.plotly_chart(fig_trend, use_container_width=True)
 
     # ===== TAB 2: RISK & COMPETITION =====
@@ -399,7 +415,7 @@ def main():
                 color_discrete_sequence=['#d30616'],
                 labels={'value': 'Number of Bids', 'count': 'Number of Contracts'}
             )
-            fig_bids.update_layout(plot_bgcolor='white', margin=dict(t=10, b=10))
+            fig_bids.update_layout(**CHART_LAYOUT)
             st.plotly_chart(fig_bids, use_container_width=True)
 
         st.markdown("**High-Amendment Contracts — Flagged for Audit**")
@@ -447,7 +463,7 @@ def main():
             color_discrete_sequence=['#d30616'],
             labels={'vendor_name': 'Vendor', 'contract_value': 'Total Spend ($)'}
         )
-        fig_vendors.update_layout(yaxis={'categoryorder': 'total ascending'}, plot_bgcolor='white', margin=dict(t=10, b=10))
+        fig_vendors.update_layout(yaxis={'categoryorder': 'total ascending'}, **CHART_LAYOUT)
         st.plotly_chart(fig_vendors, use_container_width=True)
 
         st.markdown("**Top Vendors by Fiscal Volume**")
