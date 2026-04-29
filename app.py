@@ -29,18 +29,15 @@ def apply_styles():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
         
-        /* Global Light Mode Force */
         .stApp, [data-testid="stAppViewContainer"], [data-testid="stMainBlockContainer"] {
             background-color: #ffffff !important;
-            color: #26374a !important;
+            color: #000000 !important;
             font-family: 'Noto Sans', sans-serif !important;
         }
 
-        /* Sidebar Fixes */
         [data-testid="stSidebar"] { background-color: #f8f9fa !important; border-right: 1px solid #e0e0e0 !important; }
-        [data-testid="stSidebar"] * { color: #26374a !important; }
+        [data-testid="stSidebar"] * { color: #000000 !important; }
 
-        /* Metric Card Visibility */
         [data-testid="stMetric"] {
             background-color: #ffffff !important;
             border: 1px solid #e0e0e0 !important;
@@ -48,16 +45,14 @@ def apply_styles():
             padding: 20px !important;
             border-radius: 4px !important;
         }
-        [data-testid="stMetricValue"] div { color: #26374a !important; font-weight: 700 !important; }
-        [data-testid="stMetricLabel"] p { color: #666666 !important; text-transform: uppercase; font-size: 0.8rem !important; }
+        [data-testid="stMetricValue"] div { color: #000000 !important; font-weight: 700 !important; }
+        [data-testid="stMetricLabel"] p { color: #444444 !important; text-transform: uppercase; font-size: 0.8rem !important; }
 
-        /* TABLE VISIBILITY FIX */
         .stTable { background-color: #ffffff !important; }
-        .stTable td, .stTable th { color: #26374a !important; border-bottom: 1px solid #eee !important; }
-        .stTable th { background-color: #f8f9fa !important; font-weight: 700 !important; text-align: left !important; }
+        .stTable td, .stTable th { color: #000000 !important; border-bottom: 1px solid #eee !important; }
+        .stTable th { background-color: #f8f9fa !important; font-weight: 700 !important; }
 
-        /* Tab Visibility Fix */
-        button[data-baseweb="tab"] { color: #26374a !important; font-weight: 600 !important; }
+        button[data-baseweb="tab"] { color: #000000 !important; font-weight: 600 !important; }
         button[aria-selected="true"] { color: #d30616 !important; border-bottom-color: #d30616 !important; }
 
         .gov-header {
@@ -76,7 +71,7 @@ def apply_styles():
         
         <div class="gov-header">
             <img src="https://www.canada.ca/etc/designs/canada/wet-boew/assets/sig-blk-en.svg" height="45">
-            <div style="font-size:1.6rem; font-weight:700; color:#26374a; border-left:2px solid #d30616; padding-left:20px;">
+            <div style="font-size:1.6rem; font-weight:700; color:#000000; border-left:2px solid #d30616; padding-left:20px;">
                 Procurement Intelligence Portal
                 <div style="font-size:0.75rem; color:#d30616; text-transform:uppercase; letter-spacing:1px; margin-top:4px;">Transparency & Fiscal Oversight</div>
             </div>
@@ -152,14 +147,26 @@ def main():
             st.markdown("**Spend by Category**")
             cat = f_df.groupby('commodity_full')['contract_value'].sum().reset_index()
             fig = px.bar(cat, x='commodity_full', y='contract_value', color_discrete_sequence=['#d30616'])
-            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#26374a', margin=dict(t=10, b=10))
+            # Explicitly setting Axis colors to BLACK
+            fig.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#000000',
+                margin=dict(t=10, b=10),
+                xaxis=dict(showline=True, linewidth=2, linecolor='black', gridcolor='#f0f0f0'),
+                yaxis=dict(showline=True, linewidth=2, linecolor='black', gridcolor='#f0f0f0')
+            )
             st.plotly_chart(fig, use_container_width=True)
         with c2:
             st.markdown("**Top Departments**")
             dept = f_df.groupby('owner_org_title')['contract_value'].sum().sort_values(ascending=False).head(10).reset_index()
             dept['owner_org_title'] = dept['owner_org_title'].str.slice(0, 45) + "..."
             fig2 = px.bar(dept, y='owner_org_title', x='contract_value', orientation='h', color_discrete_sequence=['#26374a'])
-            fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#26374a', margin=dict(l=150, t=10, b=10))
+            # Explicitly setting Axis colors to BLACK
+            fig2.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#000000',
+                margin=dict(l=150, t=10, b=10),
+                xaxis=dict(showline=True, linewidth=2, linecolor='black', gridcolor='#f0f0f0'),
+                yaxis=dict(showline=True, linewidth=2, linecolor='black', gridcolor='#f0f0f0')
+            )
             st.plotly_chart(fig2, use_container_width=True)
 
     with t2:
