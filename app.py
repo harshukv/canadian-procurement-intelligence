@@ -43,9 +43,8 @@ CHART_LAYOUT = dict(
     plot_bgcolor='#ffffff',
     font=dict(family='Noto Sans, sans-serif', color='#26374a'),
     margin=dict(t=20, b=20, l=10, r=10),
-    xaxis=dict(showgrid=True, gridcolor='#eeeeee', linecolor='#cccccc', tickfont=dict(color='#26374a')),
-    yaxis=dict(showgrid=True, gridcolor='#eeeeee', linecolor='#cccccc', tickfont=dict(color='#26374a')),
 )
+AXIS_STYLE = dict(showgrid=True, gridcolor='#eeeeee', linecolor='#cccccc', tickfont=dict(color='#26374a'))
 
 # --- STYLES ---
 def apply_canada_styles():
@@ -355,6 +354,8 @@ def main():
                 labels={'commodity_full': 'Category', 'contract_value': 'Total Spend ($)'}
             )
             fig_cat.update_layout(showlegend=False, **CHART_LAYOUT)
+            fig_cat.update_xaxes(**AXIS_STYLE)
+            fig_cat.update_yaxes(**AXIS_STYLE)
             st.plotly_chart(fig_cat, use_container_width=True)
 
         with c2:
@@ -374,7 +375,9 @@ def main():
                 color_discrete_sequence=['#26374a'],
                 labels={'owner_org_title': '', 'contract_value': 'Total Spend ($)'}
             )
-            fig_dept.update_layout(yaxis={'categoryorder': 'total ascending'}, **CHART_LAYOUT)
+            fig_dept.update_layout(**CHART_LAYOUT)
+            fig_dept.update_yaxes(categoryorder='total ascending', **AXIS_STYLE)
+            fig_dept.update_xaxes(**AXIS_STYLE)
             st.plotly_chart(fig_dept, use_container_width=True)
 
         # Yearly trend
@@ -389,6 +392,8 @@ def main():
             labels={'year': 'Fiscal Year', 'contract_value': 'Total Spend ($)'}
         )
         fig_trend.update_layout(**CHART_LAYOUT)
+        fig_trend.update_xaxes(**AXIS_STYLE)
+        fig_trend.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig_trend, use_container_width=True)
 
     # ===== TAB 2: RISK & COMPETITION =====
@@ -416,6 +421,8 @@ def main():
                 labels={'value': 'Number of Bids', 'count': 'Number of Contracts'}
             )
             fig_bids.update_layout(**CHART_LAYOUT)
+            fig_bids.update_xaxes(**AXIS_STYLE)
+            fig_bids.update_yaxes(**AXIS_STYLE)
             st.plotly_chart(fig_bids, use_container_width=True)
 
         st.markdown("**High-Amendment Contracts — Flagged for Audit**")
@@ -463,7 +470,9 @@ def main():
             color_discrete_sequence=['#d30616'],
             labels={'vendor_name': 'Vendor', 'contract_value': 'Total Spend ($)'}
         )
-        fig_vendors.update_layout(yaxis={'categoryorder': 'total ascending'}, **CHART_LAYOUT)
+        fig_vendors.update_layout(**CHART_LAYOUT)
+        fig_vendors.update_yaxes(categoryorder='total ascending', **AXIS_STYLE)
+        fig_vendors.update_xaxes(**AXIS_STYLE)
         st.plotly_chart(fig_vendors, use_container_width=True)
 
         st.markdown("**Top Vendors by Fiscal Volume**")
