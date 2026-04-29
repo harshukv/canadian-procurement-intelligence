@@ -79,27 +79,12 @@ def generate_pdf_report(f_df, year):
     
     pdf.add_page()
     pdf.chapter_title("1. EXECUTIVE SUMMARY")
-    summary = (f"During the fiscal year {year}, the Government of Canada committed a total of "
-               f"${total_spend:,.2f} across {len(f_df):,} contract actions. Key observations include "
-               f"a vendor concentration of {top_v_share:.1f}% among the top partners and an "
-               f"amendment-to-original budget ratio of {amend_ratio:.1f}%.")
-    pdf.chapter_body(summary)
+    pdf.chapter_body(f"Total commitment for {year}: ${total_spend:,.2f}. Vendor concentration: {top_v_share:.1f}%.")
 
-    pdf.chapter_title("2. KEY METRICS OVERVIEW")
-    pdf.chapter_body(f"Total Spend: ${total_spend:,.2f}\n"
-                     f"Number of Contracts: {len(f_df):,}\n"
-                     f"Average Contract Value: ${avg_val:,.2f}")
+    pdf.chapter_title("2. KEY METRICS")
+    pdf.chapter_body(f"Total Spend: ${total_spend:,.2f}\nContracts: {len(f_df):,}\nAvg Competition: {avg_bids:.2f} bids")
 
-    pdf.chapter_title("3. COMPETITION & RISK ANALYSIS")
-    risk_text = (f"Average Bids per Contract: {avg_bids:.2f}\n"
-                 f"Amendment Ratio: {amend_ratio:.1f}%")
-    pdf.chapter_body(risk_text)
-
-    pdf.chapter_title("4. GLOSSARY")
-    glossary = ("Contract Value: Final total dollar amount including amendments.\n"
-                "Amendment Value: Costs added after initial award.\n"
-                "Number of Bids: Count of vendors competing for the work.")
-    pdf.chapter_body(glossary)
+    # Important: Return as BYTES for st.download_button
     return pdf.output()
 
 def main():
@@ -121,6 +106,7 @@ def main():
     
     f_df = df[(df['year'] == year) & (df['owner_org_title'].isin(depts))]
     
+    # PDF BUTTON
     try:
         report_pdf = generate_pdf_report(f_df, year)
         with h_col2:
