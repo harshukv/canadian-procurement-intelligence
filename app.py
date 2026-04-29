@@ -6,21 +6,49 @@ import numpy as np
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="CA Procurement Intelligence Portal", page_icon="🇨🇦", layout="wide")
 
-# --- STYLES (PREMIUM LIGHT THEME) ---
+# --- STYLES (PREMIUM LIGHT THEME - FORCED) ---
 def apply_styles():
     st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         
-        /* Main App Background */
-        .stApp {
+        /* Force Light Background for everything */
+        .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
             background-color: #F9FAFB !important;
+            color: #111827 !important;
+        }
+        
+        /* Sidebar Force Light */
+        [data-testid="stSidebar"], [data-testid="stSidebarNav"] {
+            background-color: #ffffff !important;
+            border-right: 1px solid #E5E7EB !important;
+        }
+        [data-testid="stSidebar"] * {
             color: #111827 !important;
         }
         
         /* Typography */
         html, body, [class*="css"] {
             font-family: 'Inter', sans-serif !important;
+            color: #111827 !important;
+        }
+        
+        /* Inputs & Selectboxes Force Light */
+        div[data-baseweb="select"], div[data-baseweb="input"], .stSelectbox, .stMultiSelect {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+            border-radius: 8px !important;
+        }
+        div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+        }
+        
+        /* Multiselect Tags */
+        [data-testid="stMultiSelect"] span {
+            background-color: #F3F4F6 !important;
+            color: #111827 !important;
+            border: 1px solid #E5E7EB !important;
         }
         
         /* Metric Styling */
@@ -37,10 +65,13 @@ def apply_styles():
             font-weight: 800 !important;
         }
         
-        /* Sidebar Styling */
-        [data-testid="stSidebar"] {
-            background-color: #ffffff !important;
-            border-right: 1px solid #E5E7EB !important;
+        /* Tabs Styling */
+        button[data-baseweb="tab"] {
+            color: #6B7280 !important;
+        }
+        button[data-baseweb="tab"][aria-selected="true"] {
+            color: #d30616 !important;
+            border-bottom-color: #d30616 !important;
         }
         
         /* Header Line */
@@ -53,22 +84,29 @@ def apply_styles():
         
         /* Button Styling */
         .stButton>button {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+            border: 1px solid #E5E7EB !important;
             border-radius: 8px !important;
             font-weight: 600 !important;
-            transition: all 0.2s ease !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+        }
+        .stButton>button:hover {
+            border-color: #d30616 !important;
+            color: #d30616 !important;
         }
         
-        /* Hide default elements */
+        /* Hide default Streamlit elements */
         [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stHeader"], footer {
             visibility: hidden !important;
+            display: none !important;
         }
         
         /* Dataframe / Table styling */
-        [data-testid="stTable"] {
+        [data-testid="stTable"], [data-testid="stDataFrame"] {
             background-color: white !important;
             border-radius: 10px !important;
-            overflow: hidden !important;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+            border: 1px solid #E5E7EB !important;
         }
         </style>
     """, unsafe_allow_html=True)
